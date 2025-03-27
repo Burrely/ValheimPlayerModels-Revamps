@@ -1,7 +1,10 @@
 ﻿using SoftReferenceableAssets;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
+using BepInEx;
+using BepInEx.Configuration;
 using UnityEngine;
 
 namespace ValheimPlayerModels.Loaders
@@ -99,10 +102,11 @@ namespace ValheimPlayerModels.Loaders
             {
                 for (int i = 0; i < avatarInstance.AvatarDescriptor.boolParameters.Count; i++)
                 {
-                    int hash = Animator.StringToHash(avatarInstance.AvatarDescriptor.boolParameters[i]);
+                    var name = avatarInstance.AvatarDescriptor.boolParameters[i];
+                    int hash = Animator.StringToHash(name);
                     if (!avatarInstance.Parameters.ContainsKey(hash))
                     {
-                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { type = AvatarInstance.ParameterType.Bool, boolValue = avatarInstance.AvatarDescriptor.boolParametersDefault[i] });
+                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Bool, boolValue = avatarInstance.AvatarDescriptor.boolParametersDefault[i] });
                         avatarInstance.Animator.SetBool(hash, avatarInstance.AvatarDescriptor.boolParametersDefault[i]);
                     }
                 }
@@ -112,10 +116,11 @@ namespace ValheimPlayerModels.Loaders
             {
                 for (int i = 0; i < avatarInstance.AvatarDescriptor.intParameters.Count; i++)
                 {
-                    int hash = Animator.StringToHash(avatarInstance.AvatarDescriptor.intParameters[i]);
+                    var name = avatarInstance.AvatarDescriptor.intParameters[i];
+                    int hash = Animator.StringToHash(name);
                     if (!avatarInstance.Parameters.ContainsKey(hash))
                     {
-                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { type = AvatarInstance.ParameterType.Int, intValue = avatarInstance.AvatarDescriptor.intParametersDefault[i] });
+                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Int, intValue = avatarInstance.AvatarDescriptor.intParametersDefault[i] });
                         avatarInstance.Animator.SetInteger(hash, avatarInstance.AvatarDescriptor.intParametersDefault[i]);
                     }
                 }
@@ -125,10 +130,11 @@ namespace ValheimPlayerModels.Loaders
             {
                 for (int i = 0; i < avatarInstance.AvatarDescriptor.floatParameters.Count; i++)
                 {
-                    int hash = Animator.StringToHash(avatarInstance.AvatarDescriptor.floatParameters[i]);
+                    var name = avatarInstance.AvatarDescriptor.floatParameters[i];
+                    int hash = Animator.StringToHash(name);
                     if (!avatarInstance.Parameters.ContainsKey(hash))
                     {
-                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { type = AvatarInstance.ParameterType.Float, floatValue = avatarInstance.AvatarDescriptor.floatParametersDefault[i] });
+                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Float, floatValue = avatarInstance.AvatarDescriptor.floatParametersDefault[i] });
                         avatarInstance.Animator.SetFloat(hash, avatarInstance.AvatarDescriptor.floatParametersDefault[i]);
                     }
                 }

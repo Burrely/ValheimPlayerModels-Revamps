@@ -19,6 +19,7 @@ namespace ValheimPlayerModels.Loaders
 
         public class AvatarParameter
         {
+            public string name;
             public ParameterType type;
             public bool boolValue;
             public int intValue;
@@ -149,6 +150,32 @@ namespace ValheimPlayerModels.Loaders
             if (Owner.zNetView.GetZDO() != null && Owner.zNetView.IsOwner())
                 Owner.zNetView.GetZDO().Set(438569 + hash, value);
             return true;
+        }
+
+        /// <summary>
+        /// Loads parameters from a dictionary of string to float
+        /// ignores parameters that are in the dictionary but not defined in the avatar
+        /// leaves parameters that are defined in the avatar but not in the dictionary unchanged
+        /// </summary>
+        public void LoadParametersFromDict(Dictionary<string, float> dict) {
+            // load parameters, they are all floats since that's what the animator uses
+            // so it is easier than trying to deal with dynamic types
+            foreach (var kvp in dict)
+            {
+                SetParameterValue(kvp.Key, kvp.Value);
+            }
+        }
+        
+        /// <summary>
+        /// Saves parameters to a dictionary of string to float
+        /// </summary>
+        public Dictionary<string, float> SaveParametersToDict() {
+            var dict = new Dictionary<string, float>();
+            foreach (var kvp in Parameters)
+            {
+                dict.Add(kvp.Value.name, GetParameterValue(kvp.Key));
+            }
+            return dict;
         }
         #endregion
     }

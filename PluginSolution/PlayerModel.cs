@@ -62,6 +62,12 @@ namespace ValheimPlayerModels
             ogAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
 
             StartCoroutine(LoadAvatar());
+            
+            if (localModel == this)
+            {
+                // autosave parameters every 2 minutes
+                InvokeRepeating(nameof(SaveParametersToFile), 0, PluginConfig.parameterSaveInterval.Value);
+            }
         }
 
         private void OnDestroy()
@@ -279,6 +285,8 @@ namespace ValheimPlayerModels
 
             AvatarLoaderBase loader;
 
+            var avatarFile = Plugin.playerModelBundlePaths[selectedAvatar];
+
             if (Plugin.playerModelBundleCache.ContainsKey(selectedAvatar))
             {
                 while (Plugin.playerModelBundleCache[selectedAvatar] == null)
@@ -290,8 +298,6 @@ namespace ValheimPlayerModels
             {
                 if (!Plugin.playerModelBundleCache.ContainsKey(selectedAvatar))
                     Plugin.playerModelBundleCache.Add(selectedAvatar, null);
-
-                string avatarFile = Plugin.playerModelBundlePaths[selectedAvatar];
 
                 switch (Path.GetExtension(avatarFile).ToLower())
                 {
@@ -320,8 +326,50 @@ namespace ValheimPlayerModels
             if (avatar == null)
                 Destroy(this);
 
+            if (this == localModel) {
+                // only load default parameters for local player
+                LoadParametersFromFile();
+            }
+            
             ApplyAvatar();
             playerModelLoaded = true;
+        }
+
+        private void LoadParametersFromFile() {
+            if (this != localModel) return; // only load parameters for local player
+            if (avatar == null) return;
+            Plugin.Log.LogInfo("Loading parameters for " + selectedAvatar);
+            var configFile = Plugin.playerModelBundlePaths[selectedAvatar] + ".txt";
+            if (File.Exists(configFile)) {
+                try {
+                    var text = File.ReadAllText(configFile);
+                    // iterate over lines in the file
+                    var dict = new Dictionary<string, float>();
+                    foreach (var line in text.Split('\n')) {
+                        var parts = line.Split('=');
+                        if (parts.Length == 2) {
+                            dict[parts[0]] = float.Parse(parts[1]);
+                        }
+                    }
+                    avatar.LoadParametersFromDict(dict);
+                } catch (Exception e) {
+                    Plugin.Log.LogError("Failed to load parameters from " + configFile + ": " + e);
+                }
+            }
+        }
+        
+        private void SaveParametersToFile() {
+            if (this != localModel) return; // only save parameters for local player
+            if (avatar == null) return;
+            Plugin.Log.LogInfo("Saving parameters for " + selectedAvatar);
+            var configFile = Plugin.playerModelBundlePaths[selectedAvatar] + ".txt";
+            var dict = avatar.SaveParametersToDict();
+            // gave up on json, just write key=value pairs
+            var text = new StringBuilder();
+            foreach (var kvp in dict) {
+                text.Append($"{kvp.Key}={kvp.Value}\n");
+            }
+            File.WriteAllText(configFile, text.ToString());
         }
 
         private void SetAttachParent(Transform attach, Transform newAttach)
@@ -451,7 +499,13 @@ namespace ValheimPlayerModels
 
         public void RemoveAvatar(bool forced = false)
         {
+            if (localModel == this) {
+                // save parameters before removing local avatar
+                SaveParametersToFile();
+            }
+            
             if ((!PluginConfig.enableCustomRagdoll.Value || forced) && avatar != null) Destroy(avatar.AvatarObject);
+            
             avatar = null;
             if (ogPose != null)
             {
