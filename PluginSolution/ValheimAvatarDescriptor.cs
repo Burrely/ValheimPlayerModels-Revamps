@@ -49,24 +49,6 @@ namespace ValheimPlayerModels
 
         public void Validate()
         {
-            for (int i = 0; i < boolParameters.Count; i++)
-            {
-                if (!boolParameters[i].StartsWith("param_"))
-                    boolParameters[i] = "param_" + boolParameters[i];
-            }
-
-            for (int i = 0; i < intParameters.Count; i++)
-            {
-                if (!intParameters[i].StartsWith("param_"))
-                    intParameters[i] = "param_" + intParameters[i];
-            }
-
-            for (int i = 0; i < floatParameters.Count; i++)
-            {
-                if (!floatParameters[i].StartsWith("param_"))
-                    floatParameters[i] = "param_" + floatParameters[i];
-            }
-
             if (boolParametersDefault.Count != boolParameters.Count)
                 boolParametersDefault.Resize(boolParameters.Count);
 
