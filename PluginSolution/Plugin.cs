@@ -1,5 +1,6 @@
 ﻿#if PLUGIN
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -29,13 +30,15 @@ namespace ValheimPlayerModels
         public static bool showAvatarMenu;
         private Rect ActionWindowRect;
         private Rect AvatarWindowRect;
-        private static CursorLockMode oldCursorLockState = CursorLockMode.Confined;
-        private static bool oldCursorVisible = false;
+        private static CursorLockMode oldCursorLockState = CursorLockMode.None;
+        private static bool oldCursorVisible = true;
         public const int ActionWindowId = -48;
         public const int AvatarWindowId = -49;
         private Vector2 actionMenuWindowScrollPos;
         private Vector2 avatarMenuWindowScrollPos;
-        private int hasChangedParam = 0;
+        
+        public static bool DisplayingWindow =>
+            showActionMenu || showAvatarMenu;
 
         private void Awake()
         {
@@ -120,12 +123,6 @@ namespace ValheimPlayerModels
                     GUI.FocusWindow(AvatarWindowId);
                 }
                 else ResetCursor();
-            }
-
-            if (showActionMenu)
-            {
-                if (hasChangedParam > 0)
-                    hasChangedParam--;
             }
         }
 
@@ -214,16 +211,24 @@ namespace ValheimPlayerModels
             Cursor.visible = oldCursorVisible;
         }
 
+        private bool ShouldCloseWindow(Rect windowRect) {
+            var guiMousePosition = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
+            return GUI.Button(new Rect(0, 0, Screen.width, Screen.height), string.Empty, GUIStyle.none) &&
+                !windowRect.Contains(guiMousePosition) || Input.GetKeyDown(KeyCode.Escape);
+        }
+
         private void OnGUI()
         {
             if (showActionMenu && PlayerModel.localModel != null)
             {
-                ActionWindowRect = new Rect(Screen.width, Screen.height, 250, 400);
-                ActionWindowRect.x -= ActionWindowRect.width;
-                ActionWindowRect.y -= ActionWindowRect.height;
+                if (ActionWindowRect.width == 0) {
+                    ActionWindowRect = new Rect(Screen.width, Screen.height, 250, 400);
+                    ActionWindowRect.x -= ActionWindowRect.width;
+                    ActionWindowRect.y -= ActionWindowRect.height;
+                }
+                
 
-                if (GUI.Button(new Rect(0, 0, Screen.width, Screen.height), string.Empty, GUIStyle.none) &&
-                    !ActionWindowRect.Contains(Input.mousePosition) || Input.GetKeyDown(KeyCode.Escape))
+                if (ShouldCloseWindow(ActionWindowRect))
                 {
                     showActionMenu = false;
                     ResetCursor();
@@ -232,17 +237,18 @@ namespace ValheimPlayerModels
                 GUI.enabled = PlayerModel.localModel.playerModelLoaded;
 
                 GUI.Box(ActionWindowRect, GUIContent.none);
-                GUILayout.Window(Plugin.ActionWindowId, ActionWindowRect, ActionMenuWindow, "Action Menu");
+                ActionWindowRect = GUILayout.Window(Plugin.ActionWindowId, ActionWindowRect, ActionMenuWindow, "Action Menu");
 
                 Input.ResetInputAxes();
             }
 
             if (showAvatarMenu)
             {
-                AvatarWindowRect = new Rect(20, 100, 250, 400);
+                if (AvatarWindowRect.width == 0) {
+                    AvatarWindowRect = new Rect(20, 100, 250, 400);
+                }
 
-                if (GUI.Button(new Rect(0, 0, Screen.width, Screen.height), string.Empty, GUIStyle.none) &&
-                    !AvatarWindowRect.Contains(Input.mousePosition) || Input.GetKeyDown(KeyCode.Escape))
+                if (ShouldCloseWindow(AvatarWindowRect))
                 {
                     showAvatarMenu = false;
                     ResetCursor();
@@ -254,7 +260,7 @@ namespace ValheimPlayerModels
                     GUI.enabled = true;
 
                 GUI.Box(AvatarWindowRect, GUIContent.none);
-                GUILayout.Window(AvatarWindowId, AvatarWindowRect, AvatarMenuWindow, "Avatar Menu");
+                AvatarWindowRect = GUILayout.Window(AvatarWindowId, AvatarWindowRect, AvatarMenuWindow, "Avatar Menu");
 
                 Input.ResetInputAxes();
             }
@@ -262,6 +268,7 @@ namespace ValheimPlayerModels
 
         private void ActionMenuWindow(int id)
         {
+            GUI.DragWindow (new Rect (0, 0, 10000, 20));
             AvatarInstance avatar = PlayerModel.localModel.avatar;
             actionMenuWindowScrollPos = GUILayout.BeginScrollView(actionMenuWindowScrollPos, false, true);
 
@@ -272,6 +279,8 @@ namespace ValheimPlayerModels
 
             float controlHeight = 21;
             float currentHeight = 0;
+            
+            var setParams = new HashSet<int>();
 
             for (int i = 0; i < avatar.MenuControls.Count; i++)
             {
@@ -285,67 +294,57 @@ namespace ValheimPlayerModels
 
                 if (visible)
                 {
-                    try
-                    {
+                    try {
                         GUILayout.BeginHorizontal(GUI.skin.box);
                         GUILayout.Label(avatar.MenuControls[i].name);
 
                         float parameterValue = avatar.GetParameterValue(paramId);
 
-                        switch (avatar.MenuControls[i].type)
-                        {
+                        switch (avatar.MenuControls[i].type) {
                             case ControlType.Button:
-                                if (GUILayout.Button("Press"))
-                                {
-                                    if (parameterValue == 0)
-                                    {
-                                        avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
-                                        hasChangedParam = 5;
-                                    }
+                                if (GUILayout.RepeatButton(string.Empty)) {
+                                    avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
+                                    setParams.Add(paramId);
+                                } else if (!setParams.Contains(paramId)) {
+                                    avatar.SetParameterValue(paramId, 0);
                                 }
-                                else
-                                {
-                                    if (parameterValue != 0)
-                                    {
-                                        if (hasChangedParam <= 0)
-                                        {
-                                            avatar.SetParameterValue(paramId, 0);
-                                        }
-                                    }
-                                }
+
                                 break;
                             case ControlType.Toggle:
                                 bool menuToggleValue = parameterValue != 0;
 
                                 bool toggleValue = GUILayout.Toggle(menuToggleValue, string.Empty);
-                                if (toggleValue != menuToggleValue)
-                                {
+                                if (toggleValue != menuToggleValue) {
                                     avatar.SetParameterValue(paramId, toggleValue ? avatar.MenuControls[i].value : 0);
+                                    setParams.Add(paramId);
                                 }
+
                                 break;
                             case ControlType.Slider:
 
                                 float sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f);
-                                if (Mathf.Abs(sliderValue - parameterValue) > 0.01f)
-                                {
+                                if (Mathf.Abs(sliderValue - parameterValue) > 0.01f) {
                                     avatar.SetParameterValue(paramId, sliderValue);
+                                    setParams.Add(paramId);
                                 }
+
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
 
                         GUILayout.EndHorizontal();
+                    } catch (ArgumentException e) {
+                        Log.LogError(e);
                     }
-                    catch (ArgumentException) { }
                 }
                 else
                 {
-                    try
-                    {
+                    try {
                         GUILayout.Space(controlHeight);
+                    } catch (ArgumentException e) {
+                        Log.LogError(e);
                     }
-                    catch (ArgumentException) { }
                 }
 
                 currentHeight += controlHeight;
@@ -359,6 +358,7 @@ namespace ValheimPlayerModels
 
         private void AvatarMenuWindow(int id)
         {
+            GUI.DragWindow (new Rect (0, 0, 10000, 20));
             avatarMenuWindowScrollPos = GUILayout.BeginScrollView(avatarMenuWindowScrollPos, false, true);
 
             var scrollPosition = avatarMenuWindowScrollPos.y;
