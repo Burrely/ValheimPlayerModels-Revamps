@@ -24,6 +24,7 @@ namespace ValheimPlayerModels
         public static ConfigEntry<KeyboardShortcut> reloadKey;
         public static ConfigEntry<KeyboardShortcut> actionMenuKey;
         public static ConfigEntry<KeyboardShortcut> avatarMenuKey;
+        public static ConfigEntry<float> parameterSaveInterval;
 
         public static void InitConfig(ConfigFile _config)
         {
@@ -55,6 +56,10 @@ namespace ValheimPlayerModels
             serverUrl = config.Bind("General", "ServerURL", "",
                 new ConfigDescription("Player Models Server URL, keep empty for local player models only.", null,
                     new ConfigurationManagerAttributes { Order = 6 }));
+            
+            parameterSaveInterval = config.Bind("General", "ParameterSaveInterval", 5f * 60f,
+                new ConfigDescription("Interval in seconds to save the avatar parameters.\n(they also save when you change avatar or exit game)", null,
+                    new ConfigurationManagerAttributes { Order = 7 }));
         }
     }
 }
