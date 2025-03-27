@@ -7,6 +7,7 @@ using ValheimPlayerModels;
 using UnityEditor.SceneManagement;
 using System.IO;
 using NUnit.Framework.Api;
+using UnityEditorInternal;
 
 [CustomEditor(typeof(ValheimAvatarDescriptor))]
 public class ValheimAvatarDescriptorInspector : Editor
@@ -37,6 +38,13 @@ public class ValheimAvatarDescriptorInspector : Editor
     private SerializedProperty controlTypes;
     private SerializedProperty controlParameterNames;
     private SerializedProperty controlValues;
+    
+    [SerializeField]
+    private ReorderableList boolParamList;
+    [SerializeField]
+    private ReorderableList intParamList;
+    [SerializeField]
+    private ReorderableList floatParamList;
 
     private void OnEnable()
     {
@@ -66,6 +74,11 @@ public class ValheimAvatarDescriptorInspector : Editor
         controlTypes = serializedObject.FindProperty("controlTypes");
         controlParameterNames = serializedObject.FindProperty("controlParameterNames");
         controlValues = serializedObject.FindProperty("controlValues");
+        
+        boolParamList = new ReorderableList(serializedObject, boolParameters, true, true, true, true);
+        intParamList = new ReorderableList(serializedObject, intParameters, true, true, true, true);
+        floatParamList = new ReorderableList(serializedObject, floatParameters, true, true, true, true);
+        
     }
 
     public override void OnInspectorGUI()
@@ -276,13 +289,13 @@ public class ValheimAvatarDescriptorInspector : Editor
         EditorGUILayout.PropertyField(showCape);
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Parameters", EditorStyles.boldLabel);
-        DrawListAsDictionary(boolParameters,boolParametersDefault, "param_");
-        DrawListAsDictionary(intParameters,intParametersDefault, "param_");
-        DrawListAsDictionary(floatParameters,floatParametersDefault, "param_");
+        EditorGUILayout.LabelField("Action Menu - Parameters", EditorStyles.boldLabel);
+        DrawListAsDictionary(boolParamList, boolParametersDefault, "param_", "Bool Parameters");
+        DrawListAsDictionary(intParamList,intParametersDefault, "param_", "Integer Parameters");
+        DrawListAsDictionary(floatParamList,floatParametersDefault, "param_", "Float Parameters");
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Menu", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Action Menu", EditorStyles.boldLabel);
         DrawCombinedLists(new string[]{"Name","Type","Parameter name","Value"}, 75,controlName,controlTypes,controlParameterNames,controlValues);
 
         serializedObject.ApplyModifiedProperties();
@@ -296,84 +309,97 @@ public class ValheimAvatarDescriptorInspector : Editor
         preview.transform.localRotation = Quaternion.identity;
     }
 
-    private void DrawListAsDictionary(SerializedProperty keyList, SerializedProperty valueList, string defaultName)
+    private void DrawListAsDictionary(ReorderableList keyList, SerializedProperty valueList, string defaultName, string headerTitle)
     {
-        if (valueList.arraySize != keyList.arraySize)
+        keyList.DoLayoutList();
+
+        keyList.drawHeaderCallback = (Rect rect) =>
         {
-            valueList.arraySize = keyList.arraySize;
-        }
+            EditorGUI.LabelField(rect, headerTitle);
+        };
 
-        EditorGUILayout.PropertyField(keyList,false);
-        
-        if (keyList.isExpanded)
+        keyList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
-            EditorGUI.indentLevel += 1;
+            EditorGUI.PropertyField(rect, keyList.serializedProperty.GetArrayElementAtIndex(index), GUIContent.none);
+        };
 
-            for (int i = 0; i < keyList.arraySize; i++)
-            {
-                for (int j = 0; j < keyList.arraySize; j++)
-                {
-                    if (j != i && keyList.GetArrayElementAtIndex(j).stringValue == keyList.GetArrayElementAtIndex(i).stringValue)
-                    {
-                        EditorGUILayout.HelpBox("A Parameter with the same name already exists.", MessageType.Error);
-                        break;
-                    }
-                }
-
-                EditorGUILayout.BeginHorizontal();
-
-                EditorGUILayout.PropertyField(keyList.GetArrayElementAtIndex(i), GUIContent.none);
-                EditorGUILayout.PropertyField(valueList.GetArrayElementAtIndex(i), GUIContent.none);
-
-                EditorGUILayout.EndHorizontal();
-            }
-
-            EditorGUI.indentLevel -= 1;
-
-            EditorGUILayout.BeginHorizontal();
-
-            if (GUILayout.Button("+"))
-            {
-                keyList.InsertArrayElementAtIndex(keyList.arraySize);
-                valueList.InsertArrayElementAtIndex(valueList.arraySize);
-
-                int count = 0;
-                bool exists = false;
-                do
-                {
-                    exists = false;
-                    for (int i = 0; i < keyList.arraySize; i++)
-                    {
-                        if (keyList.GetArrayElementAtIndex(i).stringValue == defaultName + count)
-                        {
-                            exists = true;
-                            count++;
-                            break;
-                        }
-                    }
-                } while (exists);
-
-                keyList.GetArrayElementAtIndex(keyList.arraySize - 1).stringValue = defaultName + count;
-            }
-
-            if (GUILayout.Button("-"))
-            {
-                if (keyList.arraySize > 0)
-                {
-                    keyList.DeleteArrayElementAtIndex(keyList.arraySize - 1);
-                    valueList.DeleteArrayElementAtIndex(valueList.arraySize - 1);
-                }
-            }
-
-            EditorGUILayout.EndHorizontal();
-        }
+        // Original code. remains here for reference for the time being.
+        // if (valueList.arraySize != keyList.arraySize) // Checks if there is a value for every item in the list.
+        // {
+        //     valueList.arraySize = keyList.arraySize;
+        // }
+        //
+        // EditorGUILayout.PropertyField(keyList,false);
+        //
+        // if (!keyList.isExpanded)
+        // {
+        //     EditorGUI.indentLevel += 1;
+        //
+        //     for (int i = 0; i < keyList.arraySize; i++)
+        //     {
+        //         for (int j = 0; j < keyList.arraySize; j++)
+        //         {
+        //             if (j != i && keyList.GetArrayElementAtIndex(j).stringValue == keyList.GetArrayElementAtIndex(i).stringValue)
+        //             {
+        //                 EditorGUILayout.HelpBox("A Parameter with the same name already exists.", MessageType.Error);
+        //                 break;
+        //             }
+        //         }
+        //
+        //         EditorGUILayout.BeginHorizontal();
+        //
+        //         EditorGUILayout.PropertyField(keyList.GetArrayElementAtIndex(i), GUIContent.none);
+        //         EditorGUILayout.PropertyField(valueList.GetArrayElementAtIndex(i), GUIContent.none);
+        //
+        //         EditorGUILayout.EndHorizontal();
+        //     }
+        //
+        //     EditorGUI.indentLevel -= 1;
+        //
+        //     EditorGUILayout.BeginHorizontal();
+        //
+        //     if (GUILayout.Button("+"))
+        //     {
+        //         keyList.InsertArrayElementAtIndex(keyList.arraySize);
+        //         valueList.InsertArrayElementAtIndex(valueList.arraySize);
+        //
+        //         int count = 0;
+        //         bool exists = false;
+        //         do
+        //         {
+        //             exists = false;
+        //             for (int i = 0; i < keyList.arraySize; i++)
+        //             {
+        //                 if (keyList.GetArrayElementAtIndex(i).stringValue == defaultName + count)
+        //                 {
+        //                     exists = true;
+        //                     count++;
+        //                     break;
+        //                 }
+        //             }
+        //         } while (exists);
+        //
+        //         keyList.GetArrayElementAtIndex(keyList.arraySize - 1).stringValue = defaultName + count;
+        //     }
+        //
+        //     if (GUILayout.Button("-"))
+        //     {
+        //         if (keyList.arraySize > 0)
+        //         {
+        //             keyList.DeleteArrayElementAtIndex(keyList.arraySize - 1);
+        //             valueList.DeleteArrayElementAtIndex(valueList.arraySize - 1);
+        //         }
+        //     }
+        //
+        //     EditorGUILayout.EndHorizontal();
+        // }
     }
 
     private void DrawCombinedLists(string[] labels, float labelWidth, params SerializedProperty[] lists)
     {
         EditorGUILayout.PropertyField(lists[0], false);
 
-        if (lists[0].isExpanded)
+        if (!lists[0].isExpanded)
         {
             EditorGUI.indentLevel += 1;
 
@@ -395,8 +421,7 @@ public class ValheimAvatarDescriptorInspector : Editor
             EditorGUI.indentLevel -= 1;
 
             EditorGUILayout.BeginHorizontal();
-
-            if (GUILayout.Button("+"))
+            if (GUILayout.Button("+")) // Create Add button
             {
                 for (int j = 0; j < lists.Length; j++)
                 {
@@ -404,7 +429,7 @@ public class ValheimAvatarDescriptorInspector : Editor
                 }
             }
 
-            if (GUILayout.Button("-"))
+            if (GUILayout.Button("-")) // Create Remove button
             {
                 if (lists[0].arraySize > 0)
                 {
