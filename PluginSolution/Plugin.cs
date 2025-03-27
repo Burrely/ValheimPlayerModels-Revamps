@@ -28,17 +28,16 @@ namespace ValheimPlayerModels
 
         public static bool showActionMenu;
         public static bool showAvatarMenu;
-        private Rect ActionWindowRect;
-        private Rect AvatarWindowRect;
-        private static CursorLockMode oldCursorLockState = CursorLockMode.None;
-        private static bool oldCursorVisible = true;
+        private static Rect ActionWindowRect;
+        private static Rect AvatarWindowRect;
         public const int ActionWindowId = -48;
         public const int AvatarWindowId = -49;
-        private Vector2 actionMenuWindowScrollPos;
-        private Vector2 avatarMenuWindowScrollPos;
+        private static Vector2 actionMenuWindowScrollPos;
+        private static Vector2 avatarMenuWindowScrollPos;
+
+        public static bool ShouldBlockUserInput => false;
         
-        public static bool DisplayingWindow =>
-            showActionMenu || showAvatarMenu;
+        public static bool ShouldBlockAttackControls => showActionMenu || showAvatarMenu;
 
         private void Awake()
         {
@@ -59,71 +58,38 @@ namespace ValheimPlayerModels
             Logger.LogInfo($"Plugin {PluginConfig.PLUGIN_GUID} is loaded!");
         }
 
-        private void Update()
-        {
-            if (PluginConfig.reloadKey.Value.IsDown())
+        private void ReloadPlayerModels() {
+            if (!PluginConfig.enablePlayerModels.Value) return;
+            var playerModels = FindObjectsOfType<PlayerModel>();
+            var canReload = playerModels.All(playerModel => playerModel.playerModelLoaded);
+
+            if (!canReload) return;
+
+            foreach (var playerModel in playerModels)
             {
-                if (PluginConfig.enablePlayerModels.Value)
-                {
-                    PlayerModel[] playerModels = FindObjectsOfType<PlayerModel>();
-                    bool canReload = true;
-
-                    foreach (PlayerModel playerModel in playerModels)
-                    {
-                        if (!playerModel.playerModelLoaded)
-                        {
-                            canReload = false;
-                            break;
-                        }
-                    }
-
-                    if (!canReload) return;
-
-                    foreach (PlayerModel playerModel in playerModels)
-                    {
-                        playerModel.ToggleAvatar(false);
-                        Destroy(playerModel);
-                    }
-
-                    foreach (AvatarLoaderBase loader in playerModelBundleCache.Values)
-                    {
-                        if(loader != null) loader.Unload();
-                    }
-                    playerModelBundleCache.Clear();
-                    RefreshBundlePaths();
-
-                    Player[] players = FindObjectsOfType<Player>();
-                    foreach (Player player in players)
-                    {
-                        player.gameObject.AddComponent<PlayerModel>();
-                    }
-                }
+                playerModel.ToggleAvatar(false);
+                Destroy(playerModel);
             }
 
-            if (PluginConfig.actionMenuKey.Value.IsDown() && !showAvatarMenu)
-            {
-                if (PlayerModel.localModel != null && Game.instance != null)
-                {
-                    showActionMenu = !showActionMenu;
-                    if (showActionMenu)
-                    {
-                        SetUnlockCursor();
-                        GUI.FocusWindow(ActionWindowId);
-                    }
-                    else ResetCursor();
-                }
+            foreach (var loader in playerModelBundleCache.Values) {
+                loader?.Unload();
             }
+            playerModelBundleCache.Clear();
+            RefreshBundlePaths();
 
-            if (PluginConfig.avatarMenuKey.Value.IsDown() && !showActionMenu)
+            var players = FindObjectsOfType<Player>();
+            foreach (var player in players)
             {
-                showAvatarMenu = !showAvatarMenu;
-                if (showAvatarMenu)
-                {
-                    SetUnlockCursor();
-                    GUI.FocusWindow(AvatarWindowId);
-                }
-                else ResetCursor();
+                player.gameObject.AddComponent<PlayerModel>();
             }
+        }
+
+        private void UpdateCursor() {
+            // same thing a few of Valheim's scripts do to show / hide cursor
+            // we patch ZInput.IsMouseActive to return true if we want to show the cursor
+            // so this will work correctly for us too
+            Cursor.lockState = ZInput.IsMouseActive() ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = ZInput.IsMouseActive();
         }
 
         private void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
@@ -193,24 +159,6 @@ namespace ValheimPlayerModels
         }
 
         #region GUI
-        
-        public static void SetUnlockCursor()
-        {
-            if (Cursor.lockState == CursorLockMode.None) return;
-
-            oldCursorLockState = Cursor.lockState;
-            oldCursorVisible = Cursor.visible;
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-
-        public static void ResetCursor()
-        {
-            Cursor.lockState = oldCursorLockState;
-            Cursor.visible = oldCursorVisible;
-        }
-
         private bool ShouldCloseWindow(Rect windowRect) {
             var guiMousePosition = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
             return GUI.Button(new Rect(0, 0, Screen.width, Screen.height), string.Empty, GUIStyle.none) &&
@@ -219,6 +167,20 @@ namespace ValheimPlayerModels
 
         private void OnGUI()
         {
+            if (Event.current.type == EventType.KeyDown) {
+                if (PluginConfig.avatarMenuKey.Value.MainKey == Event.current.keyCode) {
+                    showAvatarMenu = !showAvatarMenu;
+                    UpdateCursor();
+                }
+                if (PluginConfig.actionMenuKey.Value.MainKey == Event.current.keyCode) {
+                    showActionMenu = !showActionMenu;
+                    UpdateCursor();
+                }
+                if (PluginConfig.reloadKey.Value.MainKey == Event.current.keyCode) {
+                    ReloadPlayerModels();
+                }
+            }
+
             if (showActionMenu && PlayerModel.localModel != null)
             {
                 if (ActionWindowRect.width == 0) {
@@ -231,7 +193,6 @@ namespace ValheimPlayerModels
                 if (ShouldCloseWindow(ActionWindowRect))
                 {
                     showActionMenu = false;
-                    ResetCursor();
                 }
 
                 GUI.enabled = PlayerModel.localModel.playerModelLoaded;
@@ -251,7 +212,6 @@ namespace ValheimPlayerModels
                 if (ShouldCloseWindow(AvatarWindowRect))
                 {
                     showAvatarMenu = false;
-                    ResetCursor();
                 }
 
                 if (PlayerModel.localModel)

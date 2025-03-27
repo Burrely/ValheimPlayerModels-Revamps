@@ -76,7 +76,6 @@ namespace ValheimPlayerModels
             {
                 Plugin.showActionMenu = false;
                 Plugin.showAvatarMenu = false;
-                Plugin.ResetCursor();
             }
             RemoveAvatar(false);
             StopAllCoroutines();
