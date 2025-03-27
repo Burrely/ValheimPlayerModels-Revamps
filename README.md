@@ -1,11 +1,14 @@
 # ValheimPlayerModels
 ![GitHub all releases](https://img.shields.io/github/downloads/dresklaw/ValheimPlayerModels/total)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/dresklaw/ValheimPlayerModels)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/burrely/ValheimPlayerModels-Revamps)
 
-Use custom player models in Valheim!
+A revamped edition of the CustomPlayerModels mod for Valheim, originally created by Ikeiwa and maintained by Dresklaw, introducing animator support and an animator enabled SDK!
 
-# [DOWNLOAD](https://github.com/dresklaw/ValheimPlayerModels/releases/latest/download/ValheimPlayerModels.dll)
+# [DOWNLOAD](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/latest/download/ValheimPlayerModels.dll)
+
+![Action Menu Preview!](https://github.com/user-attachments/assets/7748596f-1da8-4377-87f2-ce597124a73e)
 ![preview](https://github.com/dresklaw/ValheimPlayerModels/blob/main/preview.png)
+
 # How to install
 
  1. Download and install the [BepInEx package](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/)
