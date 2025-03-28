@@ -29,21 +29,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DefineConstants>TRACE;PLUGIN</DefineConstants>
   </PropertyGroup>
-
+  
   <ItemGroup>
+    <!-- Used by both SDK and Plugin -->
+    <PackageReference Include="UnityEngine.Modules" Version="2022.3.50" IncludeAssets="compile" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'!='SDK'">
+    <!-- Plugin Only (not SDK) -->
     <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
-    <PackageReference Include="UnityEngine.Modules" Version="2022.3.50" IncludeAssets="compile" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(GameDir)' == '' or '$(PublicizeLocally)' == 'false'">
+  <ItemGroup Condition="'$(Configuration)'!='SDK' and ('$(GameDir)' == '' or '$(PublicizeLocally)' == 'false')">
+    <!-- Plugin Only, PublicizeLocally=False, use gamelibs from nuget -->
     <PackageReference Include="Valheim.GameLibs" Version="*-*" IncludeAssets="compile" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(GameDir)' != '' and '$(PublicizeLocally)' == 'true'">
+  <ItemGroup Condition="'$(Configuration)'!='SDK' and '$(GameDir)' != '' and '$(PublicizeLocally)' == 'true'">
+    <!-- Plugin Only, PublicizeLocally=True, use gamelibs from game directory -->
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
     <Reference Include="$(GameDir)\valheim_Data\Managed\assembly_*.dll" IncludeAssets="compile" Publicize="true"/>
     <Reference Include="$(GameDir)\valheim_Data\Managed\Splatform.dll" IncludeAssets="compile" Publicize="true"/>

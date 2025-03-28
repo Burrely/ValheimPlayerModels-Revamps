@@ -112,7 +112,7 @@ namespace ValheimPlayerModels
 
             protected virtual Quaternion ApplyRotation(Vector3 nextTail)
             {
-                var rotation = ParentRotation * LocalRotation;
+                var rotation = ParentRotation * m_transform.localRotation;
                 return Quaternion.FromToRotation(rotation * m_boneAxis,
                     nextTail - m_transform.position) * rotation;
             }
