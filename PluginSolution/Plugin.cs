@@ -34,6 +34,7 @@ namespace ValheimPlayerModels
         public const int AvatarWindowId = -49;
         private static Vector2 actionMenuWindowScrollPos;
         private static Vector2 avatarMenuWindowScrollPos;
+        private static int lastPressedButton = -1;
 
         public static bool ShouldBlockUserInput => false;
         
@@ -262,27 +263,32 @@ namespace ValheimPlayerModels
 
                         switch (avatar.MenuControls[i].type) {
                             case ControlType.Button:
-                                if (GUILayout.RepeatButton(string.Empty)) {
+                                var isPressed = GUILayout.RepeatButton(string.Empty);
+                                var isMouseOver = GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition);
+                                if (isPressed && parameterValue != avatar.MenuControls[i].value) {
                                     avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
                                     setParams.Add(paramId);
-                                } else if (!setParams.Contains(paramId)) {
+                                    lastPressedButton = i;
+                                } else if (lastPressedButton == i) {
+                                    // this button was pressed last frame but not this frame
+                                    // reset the value to 0
                                     avatar.SetParameterValue(paramId, 0);
+                                    lastPressedButton = -1;
                                 }
 
                                 break;
                             case ControlType.Toggle:
-                                bool menuToggleValue = parameterValue != 0;
+                                var wasActive = parameterValue == avatar.MenuControls[i].value;
 
-                                bool toggleValue = GUILayout.Toggle(menuToggleValue, string.Empty);
-                                if (toggleValue != menuToggleValue) {
-                                    avatar.SetParameterValue(paramId, toggleValue ? avatar.MenuControls[i].value : 0);
+                                var isActive = GUILayout.Toggle(wasActive, string.Empty);
+                                if (isActive != wasActive) {
+                                    avatar.SetParameterValue(paramId, isActive ? avatar.MenuControls[i].value : 0);
                                     setParams.Add(paramId);
                                 }
 
                                 break;
                             case ControlType.Slider:
-
-                                float sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f);
+                                var sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f);
                                 if (Mathf.Abs(sliderValue - parameterValue) > 0.01f) {
                                     avatar.SetParameterValue(paramId, sliderValue);
                                     setParams.Add(paramId);
