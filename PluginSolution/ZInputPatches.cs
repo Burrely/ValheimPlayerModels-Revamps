@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿#if PLUGIN
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 
@@ -35,3 +36,4 @@ namespace ValheimPlayerModels {
         }
     }
 }
+#endif
