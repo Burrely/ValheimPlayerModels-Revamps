@@ -166,9 +166,18 @@ namespace ValheimPlayerModels
                 !windowRect.Contains(guiMousePosition) || Input.GetKeyDown(KeyCode.Escape);
         }
 
+        private static bool IsPlayerKeyboardFocused() {
+            // copied from PlayerController.TakeInput
+            return !(!Chat.instance || !Chat.instance.HasFocus()) && !Menu.IsVisible() && !Console.IsVisible() &&
+                !TextInput.IsVisible() && !Minimap.InTextInput() && (!ZInput.IsGamepadActive() || !Minimap.IsOpen()) &&
+                (!ZInput.IsGamepadActive() || !InventoryGui.IsVisible()) &&
+                (!ZInput.IsGamepadActive() || !StoreGui.IsVisible()) &&
+                (!ZInput.IsGamepadActive() || !Hud.IsPieceSelectionVisible());
+        }
+
         private void OnGUI()
         {
-            if (Event.current.type == EventType.KeyDown) {
+            if (Event.current.type == EventType.KeyDown && !IsPlayerKeyboardFocused()) {
                 if (PluginConfig.avatarMenuKey.Value.MainKey == Event.current.keyCode) {
                     showAvatarMenu = !showAvatarMenu;
                     UpdateCursor();
