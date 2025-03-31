@@ -45,8 +45,7 @@ namespace ValheimPlayerModels
         public bool showHelmet;
         public bool showCape;
         
-        [NonSerialized]
-        public List<ValheimAvatarParameter> animatorParameters;
+        public List<ValheimAvatarParameter> animatorParameters = [];
 
         // unfortunately, BepInEx plugin structs & classes do not work properly with Unity's serialization system
         // we could use https://github.com/xiaoxiao921/FixPluginTypesSerialization to fix this, or maybe JsonUtility
@@ -106,6 +105,8 @@ namespace ValheimPlayerModels
             }
         }
         public void OnAfterDeserialize() {
+            #if PLUGIN
+            // only fill in the true parameter list from the individual lists in the plugin
             animatorParameters = [];
             for (var i = 0; i < animatorParameterNames.Count; i++)
             {
@@ -116,6 +117,7 @@ namespace ValheimPlayerModels
                     defaultValue = animatorParameterDefaultValues[i]
                 });
             }
+            #endif
         }
     }
 }
