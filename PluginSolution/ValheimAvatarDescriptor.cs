@@ -13,6 +13,21 @@ namespace ValheimPlayerModels
         Slider
     }
 
+    public enum ValheimAvatarParameterType
+    {
+        Bool,
+        Int,
+        Float
+    }
+
+    [Serializable]
+    public struct ValheimAvatarParameter
+    {
+        public string name;
+        public ValheimAvatarParameterType type;
+        public float defaultValue;
+    }
+    
     public class ValheimAvatarDescriptor : MonoBehaviour
     {
         public string avatarName = "player";
@@ -29,13 +44,15 @@ namespace ValheimPlayerModels
 
         public bool showHelmet;
         public bool showCape;
-
-        public List<string> boolParameters;
-        public List<bool> boolParametersDefault;
-        public List<string> intParameters;
-        public List<int> intParametersDefault;
-        public List<string> floatParameters;
-        public List<float> floatParametersDefault;
+        
+        public List<ValheimAvatarParameter> animatorParameters;
+        
+        // public List<string> boolParameters;
+        // public List<bool> boolParametersDefault;
+        // public List<string> intParameters;
+        // public List<int> intParametersDefault;
+        // public List<string> floatParameters;
+        // public List<float> floatParametersDefault;
 
         public string[] controlName;
         public ControlType[] controlTypes;
@@ -49,14 +66,15 @@ namespace ValheimPlayerModels
 
         public void Validate()
         {
-            if (boolParametersDefault.Count != boolParameters.Count)
-                boolParametersDefault.Resize(boolParameters.Count);
-
-            if (intParametersDefault.Count != intParameters.Count)
-                intParametersDefault.Resize(intParameters.Count);
-
-            if (floatParametersDefault.Count != floatParameters.Count)
-                floatParametersDefault.Resize(floatParameters.Count);
+            
+            // if (boolParametersDefault.Count != boolParameters.Count)
+            //     boolParametersDefault.Resize(boolParameters.Count);
+            //
+            // if (intParametersDefault.Count != intParameters.Count)
+            //     intParametersDefault.Resize(intParameters.Count);
+            //
+            // if (floatParametersDefault.Count != floatParameters.Count)
+            //     floatParametersDefault.Resize(floatParameters.Count);
 
             if (controlTypes.Length != controlName.Length)
                 Array.Resize(ref controlTypes, controlName.Length);
