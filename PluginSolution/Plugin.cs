@@ -68,7 +68,7 @@ namespace ValheimPlayerModels
 
             foreach (var playerModel in playerModels)
             {
-                playerModel.ToggleAvatar(false);
+                playerModel.RemoveAvatar(true);
                 Destroy(playerModel);
             }
 
