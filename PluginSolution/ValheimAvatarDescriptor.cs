@@ -28,7 +28,7 @@ namespace ValheimPlayerModels
         public float defaultValue;
     }
     
-    public class ValheimAvatarDescriptor : MonoBehaviour
+    public class ValheimAvatarDescriptor : MonoBehaviour, ISerializationCallbackReceiver
     {
         public string avatarName = "player";
 
@@ -45,7 +45,15 @@ namespace ValheimPlayerModels
         public bool showHelmet;
         public bool showCape;
         
+        [NonSerialized]
         public List<ValheimAvatarParameter> animatorParameters;
+
+        // unfortunately, BepInEx plugin structs & classes do not work properly with Unity's serialization system
+        // we could use https://github.com/xiaoxiao921/FixPluginTypesSerialization to fix this, or maybe JsonUtility
+        // but this is a simple workaround that works fine, so we'll use it for now
+        public List<string> animatorParameterNames;
+        public List<ValheimAvatarParameterType> animatorParameterTypes;
+        public List<float> animatorParameterDefaultValues;
         
         // public List<string> boolParameters;
         // public List<bool> boolParametersDefault;
@@ -84,6 +92,30 @@ namespace ValheimPlayerModels
 
             if (controlValues.Length != controlName.Length)
                 Array.Resize(ref controlValues, controlName.Length);
+        }
+
+        public void OnBeforeSerialize() {
+            animatorParameterNames = [];
+            animatorParameterTypes = [];
+            animatorParameterDefaultValues = [];
+            foreach (var parameter in animatorParameters)
+            {
+                animatorParameterNames.Add(parameter.name);
+                animatorParameterTypes.Add(parameter.type);
+                animatorParameterDefaultValues.Add(parameter.defaultValue);
+            }
+        }
+        public void OnAfterDeserialize() {
+            animatorParameters = [];
+            for (var i = 0; i < animatorParameterNames.Count; i++)
+            {
+                animatorParameters.Add(new ValheimAvatarParameter
+                {
+                    name = animatorParameterNames[i],
+                    type = animatorParameterTypes[i],
+                    defaultValue = animatorParameterDefaultValues[i]
+                });
+            }
         }
     }
 }
