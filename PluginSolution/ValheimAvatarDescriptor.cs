@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -8,8 +8,8 @@ namespace ValheimPlayerModels
 {
     public enum ControlType
     {
-        Button,
         Toggle,
+        Button,
         Slider
     }
 
@@ -26,6 +26,15 @@ namespace ValheimPlayerModels
         public string name;
         public ValheimAvatarParameterType type;
         public float defaultValue;
+    }
+
+    [Serializable]
+    public struct ValheimAvatarActionMenuItem
+    {
+        public string name;
+        public ControlType type;
+        public string parameterName;
+        public float value;
     }
     
     public class ValheimAvatarDescriptor : MonoBehaviour, ISerializationCallbackReceiver
@@ -62,6 +71,8 @@ namespace ValheimPlayerModels
         public List<string> floatParameters;
         public List<float> floatParametersDefault;
 
+        public List<ValheimAvatarActionMenuItem> actionMenuItems = [];
+        
         public string[] controlName;
         public ControlType[] controlTypes;
         public string[] controlParameterNames;
