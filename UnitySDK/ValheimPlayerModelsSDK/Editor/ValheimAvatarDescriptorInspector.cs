@@ -10,6 +10,7 @@ using NUnit.Framework.Api;
 using UnityEditorInternal;
 using System.ComponentModel;
 using UnityEditor.Animations;
+using System.Globalization;
 
 [CustomEditor(typeof(ValheimAvatarDescriptor))]
 public class ValheimAvatarDescriptorInspector : Editor
@@ -32,6 +33,8 @@ public class ValheimAvatarDescriptorInspector : Editor
 
     private SerializedProperty animatorParameters;
 
+    private SerializedProperty actionMenuItems;
+
     private SerializedProperty controlName;
     private SerializedProperty controlTypes;
     private SerializedProperty controlParameterNames;
@@ -39,6 +42,10 @@ public class ValheimAvatarDescriptorInspector : Editor
     
     [SerializeField]
     private ReorderableList animParamList;
+
+    [SerializeField]
+    private ReorderableList actionMenuItemsList;
+
 
     // [SerializeField]
     // private ReorderableList intParamList;
@@ -63,6 +70,7 @@ public class ValheimAvatarDescriptorInspector : Editor
         showCape = serializedObject.FindProperty("showCape");
 
         animatorParameters = serializedObject.FindProperty("animatorParameters");
+        actionMenuItems = serializedObject.FindProperty("actionMenuItems");
 
         controlName = serializedObject.FindProperty("controlName");
         controlTypes = serializedObject.FindProperty("controlTypes");
@@ -70,6 +78,7 @@ public class ValheimAvatarDescriptorInspector : Editor
         controlValues = serializedObject.FindProperty("controlValues");
         
         animParamList = new ReorderableList(serializedObject, animatorParameters, true, true, true, true);
+        actionMenuItemsList = new ReorderableList(serializedObject, actionMenuItems, true, true, true, true);
         
     }
 
@@ -77,7 +86,7 @@ public class ValheimAvatarDescriptorInspector : Editor
     {
         serializedObject.Update();
 
-        EditorGUILayout.HelpBox("It's recommended to use the \"Valheim/Standard\" shader\non the avatar or you'll get weird results.", MessageType.Info);
+        EditorGUILayout.HelpBox("It's recommended to use the \"Standard\" shader\non the avatar for best results.", MessageType.Info);
 
         ValheimAvatarDescriptor descriptor = (ValheimAvatarDescriptor)target;
         Animator animator = descriptor.GetComponent<Animator>();
@@ -208,8 +217,6 @@ public class ValheimAvatarDescriptorInspector : Editor
         {
             string path = EditorUtility.SaveFilePanel("Save object file", "", descriptor.avatarName + ".valavtr", "valavtr");
 
-            Debug.Log($"animatorParamaters array size: {animatorParameters.arraySize}");
-
             if (path != "")
             {
                 string fileName = Path.GetFileName(path);
@@ -285,11 +292,13 @@ public class ValheimAvatarDescriptorInspector : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Action Menu - Parameters", EditorStyles.boldLabel);
         if (GUILayout.Button("Generate parameters from attached Animator")) { PopulateParameterListFromAnimator(animParamList, animatorParameters); }
-        DrawParameterList(animParamList, animatorParameters, "param_", "Bool Parameters");
+        DrawParameterList(animParamList, animatorParameters);
         
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Action Menu", EditorStyles.boldLabel);
-        DrawCombinedLists(new string[]{"Name","Type","Parameter name","Value"}, 75,controlName,controlTypes,controlParameterNames,controlValues);
+        DrawMenuItemsList(actionMenuItemsList, actionMenuItems, animatorParameters);
+
+        //DrawCombinedLists(new string[]{"Name","Type","Parameter name","Value"}, 75,controlName,controlTypes,controlParameterNames,controlValues);
 
         serializedObject.ApplyModifiedProperties();
     }
@@ -305,7 +314,6 @@ public class ValheimAvatarDescriptorInspector : Editor
         foreach (var parameter in animator.parameters) {
             
             //Only proceed if the parameter.type is valid for our context.
-            Debug.Log($"parameter.type = {parameter.type}");
             if (parameter.type == UnityEngine.AnimatorControllerParameterType.Bool && parameter.type == UnityEngine.AnimatorControllerParameterType.Int && parameter.type == UnityEngine.AnimatorControllerParameterType.Float) break;
             
             serializedParameters.arraySize++;
@@ -349,7 +357,7 @@ public class ValheimAvatarDescriptorInspector : Editor
         preview.transform.localRotation = Quaternion.identity;
     }
 
-    private void DrawParameterList(ReorderableList parameterList, SerializedProperty serializedParameters, string defaultName, string headerTitle)
+    private void DrawParameterList(ReorderableList parameterList, SerializedProperty serializedParameters)
     {
         parameterList.DoLayoutList();
 
@@ -405,23 +413,7 @@ public class ValheimAvatarDescriptorInspector : Editor
             EditorGUI.PropertyField(rect1, element.FindPropertyRelative("type"), GUIContent.none);
             EditorGUI.PropertyField(rect2, element.FindPropertyRelative("name"), GUIContent.none);
             
-            var defaultValue = element.FindPropertyRelative("defaultValue").floatValue;
-
-            switch((ValheimAvatarParameterType)element.FindPropertyRelative("type").enumValueIndex) {
-                case ValheimAvatarParameterType.Bool:
-                    defaultValue = EditorGUI.Toggle(rect3, defaultValue > 0) ? 1 : 0;
-                    break;
-                case ValheimAvatarParameterType.Int:
-                    defaultValue = EditorGUI.IntField(rect3, (int)defaultValue);
-                    break;
-                case ValheimAvatarParameterType.Float:
-                    defaultValue = EditorGUI.FloatField(rect3, defaultValue);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            element.FindPropertyRelative("defaultValue").floatValue = defaultValue;
+            element.FindPropertyRelative("defaultValue").floatValue = AvatarParameterField(rect3, (ValheimAvatarParameterType)element.FindPropertyRelative("type").enumValueIndex, element.FindPropertyRelative("defaultValue").floatValue);
 
         };
 
@@ -429,9 +421,145 @@ public class ValheimAvatarDescriptorInspector : Editor
         parameterList.onAddCallback = (parameterList) => {
 
             serializedParameters.arraySize++;
+            parameterList.Select(serializedParameters.arraySize-1);
 
         };
 
+    }
+
+    private void DrawMenuItemsList(ReorderableList menuList, SerializedProperty serializedMenuItems, SerializedProperty serializedParameters)
+    {
+
+        bool missingParameter = false;
+        
+        //
+        (Rect, Rect, Rect, Rect) CalcLayout(Rect rect) {
+
+            Rect rectName = rect; // Item name
+            Rect rectParam = rect; // Item parameter
+            Rect rectType = rect; // Item type
+            Rect rectValue = rect; // Item value
+            
+            // Rect for containing menu item data (besides item name).
+            Rect rectDataContainer = rect;
+
+            // Padding
+            var padding = 6;
+
+            // Setting width
+            rectParam.width = 80;
+            rectType.width = 64;
+            rectValue.width = 60;
+            // Make name rect fill up the remaining space.
+            rectName.width = rect.width - (rectParam.width + rectType.width + rectValue.width + padding * 3);
+
+            // Set rect positions.
+            rectName.x = rect.x;
+            rectParam.x = rectName.xMax + padding;
+            rectType.x = rectParam.xMax + padding;
+            rectValue.x = rectType.xMax + padding;
+
+            return (rectName, rectParam, rectType, rectValue);
+        }
+        var paramNames = new string[serializedParameters.arraySize];
+        for (var i = 0; i < serializedParameters.arraySize; i++) {
+            paramNames[i] = serializedParameters.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue;
+        }
+        
+        menuList.drawHeaderCallback = (Rect rect) =>
+        {
+            
+            rect.xMin += ReorderableList.Defaults.dragHandleWidth - ReorderableList.Defaults.padding + 1;
+            rect.xMax -= 1;
+
+            var (rectName, rectParam, rectType, rectValue) = CalcLayout(rect);
+            EditorGUI.LabelField(rectName, "Name");
+            EditorGUI.LabelField(rectParam, "Parameter");
+            EditorGUI.LabelField(rectType, "Type");
+            EditorGUI.LabelField(rectValue, "Value");
+
+        };
+
+        menuList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        {
+            
+            var oldHeight = rect.height;
+            rect.height = GUI.skin.label.CalcHeight(new GUIContent(""), rect.width) + 1;
+
+            rect.y += (oldHeight - rect.height) / 2;
+
+            var (rectName, rectParam, rectType, rectValue) = CalcLayout(rect);
+            //
+            var element = menuList.serializedProperty.GetArrayElementAtIndex(index);
+            var paramNameProp = element.FindPropertyRelative("parameterName");
+
+            // Create fields
+            EditorGUI.PropertyField(rectName, element.FindPropertyRelative("name"), GUIContent.none);
+            var popup = EditorGUI.Popup(rectParam, Array.IndexOf(paramNames, paramNameProp.stringValue), paramNames);
+            EditorGUI.PropertyField(rectType, element.FindPropertyRelative("type"), GUIContent.none);
+            if (element.FindPropertyRelative("type").enumValueIndex != (int)ControlType.Slider && popup != -1) {
+                element.FindPropertyRelative("value").floatValue = AvatarParameterField(rectValue, (ValheimAvatarParameterType)serializedParameters.GetArrayElementAtIndex(popup).FindPropertyRelative("type").enumValueIndex, element.FindPropertyRelative("value").floatValue);
+            } else {
+                GUI.color = Color.grey;
+                GUI.Label(rectValue, "n/a");
+                GUI.color = Color.white;
+            }
+            
+            if (popup != -1) {
+                paramNameProp.stringValue = paramNames[popup];
+            } else {
+                missingParameter = true;
+            }
+            
+
+        };
+
+        // Add button - Adds item.
+        menuList.onAddCallback = (menuList) => {
+
+            serializedMenuItems.arraySize++;
+            var newMenuItem = menuList.serializedProperty.GetArrayElementAtIndex(serializedMenuItems.arraySize-1);
+            var newMenuItemIndex = serializedMenuItems.arraySize-1;
+
+            // If parameter list is not empty, fetch parameterName from there, otherwise return empty string.
+            var parameterName = (serializedParameters.arraySize != 0) ?
+                (serializedMenuItems.arraySize >= serializedParameters.arraySize) ? // Takes the name from the parameter list at the same, or highest index if this lists' length precedes it.
+                    serializedParameters.GetArrayElementAtIndex(serializedParameters.arraySize-1).FindPropertyRelative("name").stringValue :
+                    serializedParameters.GetArrayElementAtIndex(newMenuItemIndex).FindPropertyRelative("name").stringValue
+                    : "";
+
+
+            newMenuItem.FindPropertyRelative("name").stringValue = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(parameterName);
+            newMenuItem.FindPropertyRelative("parameterName").stringValue = parameterName;
+            newMenuItem.FindPropertyRelative("value").floatValue = 1;
+            menuList.Select(newMenuItemIndex);
+        };
+        
+        menuList.DoLayoutList();
+        if (missingParameter) {
+            EditorGUILayout.HelpBox("Menu items are missing parameters.", MessageType.Warning);
+        }
+
+    }
+
+    private float AvatarParameterField(Rect rect, ValheimAvatarParameterType type, float value) {
+        
+        switch(type) {
+            case ValheimAvatarParameterType.Bool:
+                value = EditorGUI.Toggle(rect, value > 0) ? 1 : 0;
+                break;
+            case ValheimAvatarParameterType.Int:
+                value = EditorGUI.IntField(rect, (int)value);
+                break;
+            case ValheimAvatarParameterType.Float:
+                value = EditorGUI.FloatField(rect, value);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        return value;
+        
     }
 
     private void DrawCombinedLists(string[] labels, float labelWidth, params SerializedProperty[] lists)
