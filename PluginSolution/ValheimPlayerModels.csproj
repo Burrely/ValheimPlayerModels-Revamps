@@ -62,6 +62,6 @@
   </ItemGroup>
   
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if $(ConfigurationName) == SDK (&#xD;&#xA; copy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\UnitySDK\ValheimPlayerModelsSDK\&quot; /y&#xD;&#xA;) ELSE (&#xD;&#xA; echo Edit the Post-build event to export the plugin in your game folder&#xD;&#xA; copy &quot;$(TargetPath)&quot; &quot;$(TargetInstallDir)\BepInEx\plugins\$(TargetFileName)&quot; /y&#xD;&#xA; if $(ConfigurationName) == Debug (&#xD;&#xA;  copy &quot;$(TargetPath)&quot; &quot;$(TargetInstallDir)\BepInEx\plugins\$(TargetName).pdb&quot; /y&#xD;&#xA; )&#xD;&#xA;)" />
+    <Exec Command="if $(ConfigurationName) == SDK (&#xD;&#xA; copy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\UnitySDK\ValheimPlayerModelsSDK\&quot; /y&#xD;&#xA;) ELSE (&#xD;&#xA; echo Edit the Post-build event to export the plugin in your game folder&#xD;&#xA; copy &quot;$(TargetPath)&quot; &quot;$(TargetInstallDir)\BepInEx\plugins\$(TargetFileName)&quot; /y&#xD;&#xA; if $(ConfigurationName) == Debug (&#xD;&#xA;  copy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;$(TargetInstallDir)\BepInEx\plugins\$(TargetName).pdb&quot; /y&#xD;&#xA; )&#xD;&#xA;)" />
   </Target>
 </Project>
