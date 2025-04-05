@@ -1,4 +1,5 @@
 ﻿#if PLUGIN
+using System;
 using SoftReferenceableAssets;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Numerics;
 using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace ValheimPlayerModels.Loaders
 {
@@ -98,48 +100,77 @@ namespace ValheimPlayerModels.Loaders
             avatarInstance.AvatarDescriptor.Validate();
 
             avatarInstance.Parameters = new Dictionary<int, AvatarInstance.AvatarParameter>();
-
-            if (avatarInstance.AvatarDescriptor.boolParameters != null)
+            
+            if (avatarInstance.AvatarDescriptor.animatorParameters != null)
             {
-                for (int i = 0; i < avatarInstance.AvatarDescriptor.boolParameters.Count; i++)
+                foreach (var element in avatarInstance.AvatarDescriptor.animatorParameters)
                 {
-                    var name = avatarInstance.AvatarDescriptor.boolParameters[i];
-                    int hash = Animator.StringToHash(name);
-                    if (!avatarInstance.Parameters.ContainsKey(hash))
+                    var name = element.name;
+                    var type = element.type;
+                    var defaultValue = element.defaultValue;
+                    var hash = Animator.StringToHash(name);
+                    if (avatarInstance.Parameters.ContainsKey(hash)) continue;
+                    switch (type)
                     {
-                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Bool, boolValue = avatarInstance.AvatarDescriptor.boolParametersDefault[i] });
-                        avatarInstance.Animator.SetBool(hash, avatarInstance.AvatarDescriptor.boolParametersDefault[i]);
+                        case ValheimAvatarParameterType.Bool:
+                            avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Bool, boolValue = defaultValue > 0 });
+                            avatarInstance.Animator.SetBool(hash, defaultValue > 0);
+                            break;
+                        case ValheimAvatarParameterType.Int:
+                            avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Int, intValue = (int)defaultValue });
+                            avatarInstance.Animator.SetInteger(hash, (int)defaultValue);
+                            break;
+                        case ValheimAvatarParameterType.Float:
+                            avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Float, floatValue = defaultValue });
+                            avatarInstance.Animator.SetFloat(hash, defaultValue);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
                 }
             }
 
-            if (avatarInstance.AvatarDescriptor.intParameters != null)
-            {
-                for (int i = 0; i < avatarInstance.AvatarDescriptor.intParameters.Count; i++)
-                {
-                    var name = avatarInstance.AvatarDescriptor.intParameters[i];
-                    int hash = Animator.StringToHash(name);
-                    if (!avatarInstance.Parameters.ContainsKey(hash))
-                    {
-                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Int, intValue = avatarInstance.AvatarDescriptor.intParametersDefault[i] });
-                        avatarInstance.Animator.SetInteger(hash, avatarInstance.AvatarDescriptor.intParametersDefault[i]);
-                    }
-                }
-            }
-
-            if (avatarInstance.AvatarDescriptor.floatParameters != null)
-            {
-                for (int i = 0; i < avatarInstance.AvatarDescriptor.floatParameters.Count; i++)
-                {
-                    var name = avatarInstance.AvatarDescriptor.floatParameters[i];
-                    int hash = Animator.StringToHash(name);
-                    if (!avatarInstance.Parameters.ContainsKey(hash))
-                    {
-                        avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Float, floatValue = avatarInstance.AvatarDescriptor.floatParametersDefault[i] });
-                        avatarInstance.Animator.SetFloat(hash, avatarInstance.AvatarDescriptor.floatParametersDefault[i]);
-                    }
-                }
-            }
+            // if (avatarInstance.AvatarDescriptor.boolParameters != null)
+            // {
+            //     for (int i = 0; i < avatarInstance.AvatarDescriptor.boolParameters.Count; i++)
+            //     {
+            //         var name = avatarInstance.AvatarDescriptor.boolParameters[i];
+            //         int hash = Animator.StringToHash(name);
+            //         if (!avatarInstance.Parameters.ContainsKey(hash))
+            //         {
+            //             avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Bool, boolValue = avatarInstance.AvatarDescriptor.boolParametersDefault[i] });
+            //             avatarInstance.Animator.SetBool(hash, avatarInstance.AvatarDescriptor.boolParametersDefault[i]);
+            //         }
+            //     }
+            // }
+            //
+            // if (avatarInstance.AvatarDescriptor.intParameters != null)
+            // {
+            //     for (int i = 0; i < avatarInstance.AvatarDescriptor.intParameters.Count; i++)
+            //     {
+            //         var name = avatarInstance.AvatarDescriptor.intParameters[i];
+            //         int hash = Animator.StringToHash(name);
+            //         if (!avatarInstance.Parameters.ContainsKey(hash))
+            //         {
+            //             avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Int, intValue = avatarInstance.AvatarDescriptor.intParametersDefault[i] });
+            //             avatarInstance.Animator.SetInteger(hash, avatarInstance.AvatarDescriptor.intParametersDefault[i]);
+            //         }
+            //     }
+            // }
+            //
+            // if (avatarInstance.AvatarDescriptor.floatParameters != null)
+            // {
+            //     for (int i = 0; i < avatarInstance.AvatarDescriptor.floatParameters.Count; i++)
+            //     {
+            //         var name = avatarInstance.AvatarDescriptor.floatParameters[i];
+            //         int hash = Animator.StringToHash(name);
+            //         if (!avatarInstance.Parameters.ContainsKey(hash))
+            //         {
+            //             avatarInstance.Parameters.Add(hash, new AvatarInstance.AvatarParameter { name = name, type = AvatarInstance.ParameterType.Float, floatValue = avatarInstance.AvatarDescriptor.floatParametersDefault[i] });
+            //             avatarInstance.Animator.SetFloat(hash, avatarInstance.AvatarDescriptor.floatParametersDefault[i]);
+            //         }
+            //     }
+            // }
 
             #endregion
 
