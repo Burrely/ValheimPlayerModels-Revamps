@@ -240,6 +240,10 @@ namespace ValheimPlayerModels
         {
             GUI.DragWindow (new Rect (0, 0, 10000, 20));
             AvatarInstance avatar = PlayerModel.localModel.avatar;
+            if (avatar == null) {
+                showActionMenu = false;
+                return;
+            }
             actionMenuWindowScrollPos = GUILayout.BeginScrollView(actionMenuWindowScrollPos, false, true);
 
             var scrollPosition = actionMenuWindowScrollPos.y;

@@ -322,8 +322,10 @@ namespace ValheimPlayerModels
 
             avatar = loader.LoadAvatar(this);
 
-            if (avatar == null)
+            if (avatar == null) {
                 Destroy(this);
+                yield break;
+            }
 
             if (this == localModel) {
                 // only load default parameters for local player

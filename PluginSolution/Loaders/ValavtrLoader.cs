@@ -34,6 +34,11 @@ namespace ValheimPlayerModels.Loaders
 
         public override AvatarInstance LoadAvatar(PlayerModel playerModel)
         {
+            if (!avatarBundle) {
+                Plugin.Log.LogError("Cannot load avatar since bundle is null");
+                return null;
+            }
+            
             AvatarInstance avatarInstance = new AvatarInstance(playerModel);
 
             GameObject avatarAsset = avatarBundle.LoadAsset<GameObject>("_avatar");
