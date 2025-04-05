@@ -54,12 +54,13 @@ namespace ValheimPlayerModels
         public List<ValheimAvatarParameterType> animatorParameterTypes;
         public List<float> animatorParameterDefaultValues;
         
-        // public List<string> boolParameters;
-        // public List<bool> boolParametersDefault;
-        // public List<string> intParameters;
-        // public List<int> intParametersDefault;
-        // public List<string> floatParameters;
-        // public List<float> floatParametersDefault;
+        // legacy parameter lists
+        public List<string> boolParameters;
+        public List<bool> boolParametersDefault;
+        public List<string> intParameters;
+        public List<int> intParametersDefault;
+        public List<string> floatParameters;
+        public List<float> floatParametersDefault;
 
         public string[] controlName;
         public ControlType[] controlTypes;
@@ -94,6 +95,14 @@ namespace ValheimPlayerModels
         }
 
         public void OnBeforeSerialize() {
+            // null out the legacy parameter lists
+            boolParameters = null;
+            boolParametersDefault = null;
+            intParameters = null;
+            intParametersDefault = null;
+            floatParameters = null;
+            floatParametersDefault = null;
+            
             animatorParameterNames = [];
             animatorParameterTypes = [];
             animatorParameterDefaultValues = [];
@@ -115,6 +124,36 @@ namespace ValheimPlayerModels
                     name = animatorParameterNames[i],
                     type = animatorParameterTypes[i],
                     defaultValue = animatorParameterDefaultValues[i]
+                });
+            }
+            // also fill in from the legacy parameter lists
+            if (boolParameters == null) return;
+            Plugin.Log.LogInfo($"Avatar {name} has legacy parameters, transferring to new system");
+            for (var i = 0; i < boolParameters.Count; i++)
+            {
+                animatorParameters.Add(new ValheimAvatarParameter
+                {
+                    name = boolParameters[i],
+                    type = ValheimAvatarParameterType.Bool,
+                    defaultValue = boolParametersDefault[i] ? 1 : 0
+                });
+            }
+            for (var i = 0; i < intParameters.Count; i++)
+            {
+                animatorParameters.Add(new ValheimAvatarParameter
+                {
+                    name = intParameters[i],
+                    type = ValheimAvatarParameterType.Int,
+                    defaultValue = intParametersDefault[i]
+                });
+            }
+            for (var i = 0; i < floatParameters.Count; i++)
+            {
+                animatorParameters.Add(new ValheimAvatarParameter
+                {
+                    name = floatParameters[i],
+                    type = ValheimAvatarParameterType.Float,
+                    defaultValue = floatParametersDefault[i]
                 });
             }
             #endif
