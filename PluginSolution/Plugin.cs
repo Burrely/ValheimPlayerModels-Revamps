@@ -73,7 +73,7 @@ namespace ValheimPlayerModels
             }
 
             foreach (var loader in playerModelBundleCache.Values) {
-                loader?.Unload();
+                StartCoroutine(loader?.Unload());
             }
             playerModelBundleCache.Clear();
             RefreshBundlePaths();

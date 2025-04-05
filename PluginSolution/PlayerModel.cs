@@ -307,7 +307,7 @@ namespace ValheimPlayerModels
                         yield break;
                 }
                 
-                yield return StartCoroutine(loader.LoadFile(avatarFile));
+                yield return loader.LoadFile(avatarFile);
 
                 if (!loader.LoadedSuccessfully)
                 {
@@ -320,7 +320,9 @@ namespace ValheimPlayerModels
 
             #endregion
 
-            avatar = loader.LoadAvatar(this);
+            yield return loader.LoadAvatar(this);
+
+            avatar = loader.LoadedAvatarInstance;
 
             if (avatar == null) {
                 Destroy(this);

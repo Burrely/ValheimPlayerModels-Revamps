@@ -184,10 +184,11 @@ namespace ValheimPlayerModels.Loaders
     public abstract class AvatarLoaderBase
     {
         public bool LoadedSuccessfully { get; protected set; }
+        public AvatarInstance LoadedAvatarInstance { get; protected set; }
 
         public abstract IEnumerator LoadFile(string file);
-        public abstract AvatarInstance LoadAvatar(PlayerModel playerModel);
-        public abstract void Unload();
+        public abstract IEnumerator LoadAvatar(PlayerModel playerModel);
+        public abstract IEnumerator Unload();
     }
 }
 #endif

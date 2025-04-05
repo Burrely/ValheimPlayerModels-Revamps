@@ -34,20 +34,23 @@ namespace ValheimPlayerModels.Loaders
             LoadedSuccessfully = true;
         }
 
-        public override AvatarInstance LoadAvatar(PlayerModel playerModel)
+        public override IEnumerator LoadAvatar(PlayerModel playerModel)
         {
             if (!avatarBundle) {
                 Plugin.Log.LogError("Cannot load avatar since bundle is null");
-                return null;
+                yield break;
             }
             
             AvatarInstance avatarInstance = new AvatarInstance(playerModel);
 
-            GameObject avatarAsset = avatarBundle.LoadAsset<GameObject>("_avatar");
+            var avatarAssetBundleRequest = avatarBundle.LoadAssetAsync<GameObject>("_avatar");
+            // await the request to finish
+            yield return avatarAssetBundleRequest;
+            var avatarAsset = avatarAssetBundleRequest.asset as GameObject;
             if (!avatarAsset)
             {
                 Plugin.Log.LogError("Couldn't find avatar prefab");
-                return null;
+                yield break;
             }
 
             avatarInstance.AvatarObject = Object.Instantiate(avatarAsset);
@@ -199,12 +202,14 @@ namespace ValheimPlayerModels.Loaders
 
             #endregion
 
-            return avatarInstance;
+            LoadedAvatarInstance = avatarInstance;
         }
 
-        public override void Unload()
+        public override IEnumerator Unload()
         {
-            if (avatarBundle) avatarBundle.Unload(true);
+            if (avatarBundle) {
+                yield return avatarBundle.UnloadAsync(true);
+            }
             if (referencedShader)
             {
                 referencedShader = false;
