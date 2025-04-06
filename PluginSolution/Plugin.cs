@@ -1,4 +1,4 @@
-﻿#if PLUGIN
+#if PLUGIN
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -270,13 +270,16 @@ namespace ValheimPlayerModels
                 {
                     try {
                         GUILayout.BeginHorizontal(GUI.skin.box);
-                        GUILayout.Label(avatar.MenuControls[i].name);
+                        if (avatar.MenuControls[i].type != ControlType.Button) // Buttons won't need the label, as a matter of fact, it'll get in the way for their styling..
+                        {
+                            GUILayout.Label(avatar.MenuControls[i].name);
+                        }
 
                         float parameterValue = avatar.GetParameterValue(paramId);
 
                         switch (avatar.MenuControls[i].type) {
                             case ControlType.Button:
-                                var isPressed = GUILayout.RepeatButton(string.Empty);
+                                var isPressed = GUILayout.RepeatButton($"{avatar.MenuControls[i].name} (held)", GUILayout.MaxWidth(1000));
                                 var isMouseOver = GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition);
                                 if (isPressed && parameterValue != avatar.MenuControls[i].value) {
                                     avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
