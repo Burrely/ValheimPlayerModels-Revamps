@@ -193,8 +193,13 @@ namespace ValheimPlayerModels
 
             if (showActionMenu && PlayerModel.localModel != null)
             {
-                if (ActionWindowRect.width == 0) {
-                    ActionWindowRect = new Rect(Screen.width, Screen.height, 250, 400);
+                if (ActionWindowRect.width == 0)
+                {
+                    var actionWindowWidth = 250;
+                    var actionWindowHeight = 400;
+                    var actionWindowHorizontalOffset = (float)(actionWindowWidth / 2 + Screen.width*0.05);
+                    
+                    ActionWindowRect = new Rect(Screen.width/2 + actionWindowWidth/2 + actionWindowHorizontalOffset, Screen.height/2 + actionWindowHeight/2, actionWindowWidth, actionWindowHeight);
                     ActionWindowRect.x -= ActionWindowRect.width;
                     ActionWindowRect.y -= ActionWindowRect.height;
                 }
