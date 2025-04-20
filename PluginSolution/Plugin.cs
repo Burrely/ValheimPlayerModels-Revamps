@@ -255,9 +255,6 @@ namespace ValheimPlayerModels
             var scrollHeight = ActionWindowRect.height;
 
             GUILayout.BeginVertical();
-
-            float controlHeight = 21;
-            float currentHeight = 0;
             
             var setParams = new HashSet<int>();
 
@@ -269,93 +266,76 @@ namespace ValheimPlayerModels
                     string.IsNullOrEmpty(avatar.MenuControls[i].parameter) ||
                     !avatar.Parameters.ContainsKey(paramId)) continue;
 
-                var visible = controlHeight == 0 || currentHeight + controlHeight >= scrollPosition && currentHeight <= scrollPosition + scrollHeight;
-
-                if (visible)
-                {
-                    try {
-                        GUILayout.BeginHorizontal(GUI.skin.box, GUILayout.Height(GUI.skin.button.lineHeight));
-                        if (avatar.MenuControls[i].type != ControlType.Button) // Buttons won't need the label, as a matter of fact, it'll get in the way for their styling..
-                        {
-                            GUILayout.Label(avatar.MenuControls[i].name, GUILayout.Width(ActionWindowRect.width / 2 - 40));
-                        }
-
-                        float parameterValue = avatar.GetParameterValue(paramId);
-
-                        switch (avatar.MenuControls[i].type) {
-                            case ControlType.Button:
-                                // sandwich between two flexible spaces to center it vertically
-                                GUILayout.BeginVertical();
-                                GUILayout.FlexibleSpace();
-                                var isPressed = GUILayout.RepeatButton($"{avatar.MenuControls[i].name} (held)", GUILayout.MaxWidth(1000));
-                                GUILayout.FlexibleSpace();
-                                GUILayout.EndVertical();
-                                if (isPressed && parameterValue != avatar.MenuControls[i].value) {
-                                    avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
-                                    setParams.Add(paramId);
-                                    lastPressedButton = i;
-                                } else if (lastPressedButton == i) {
-                                    // this button was pressed last frame but not this frame
-                                    // reset the value to 0
-                                    avatar.SetParameterValue(paramId, 0);
-                                    lastPressedButton = -1;
-                                }
-
-                                break;
-                            case ControlType.Toggle:
-                                var wasActive = parameterValue == avatar.MenuControls[i].value;
-                                // sandwich between two flexible spaces to center it vertically
-                                GUILayout.BeginVertical();
-                                GUILayout.FlexibleSpace();
-                                var isActive = GUILayout.Toggle(wasActive, string.Empty);
-                                // toggle has 2 pixel gap on top for some reason,
-                                // for some even stranger reason you need a 3 pixel space below to balance that out?
-                                GUILayout.Space(3);
-                                GUILayout.FlexibleSpace();
-                                GUILayout.EndVertical();
-                                if (isActive != wasActive) {
-                                    avatar.SetParameterValue(paramId, isActive ? avatar.MenuControls[i].value : 0);
-                                    setParams.Add(paramId);
-                                }
-
-                                break;
-                            case ControlType.Slider:
-                                // sandwich between two flexible spaces to center it vertically
-                                GUILayout.BeginVertical();
-                                GUILayout.FlexibleSpace();
-                                // this is still not centered! the bar is 1 pixel too high and is an odd height so is impossible to center
-                                // since the slider dot / point is an even height...
-                                var sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f, GUILayout.ExpandHeight(false));
-                                GUILayout.FlexibleSpace();
-                                GUILayout.EndVertical();
-                                if (Mathf.Abs(sliderValue - parameterValue) > 0.01f) {
-                                    avatar.SetParameterValue(paramId, sliderValue);
-                                    setParams.Add(paramId);
-                                }
-
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-
-                        GUILayout.EndHorizontal();
-                    } catch (ArgumentException e) {
-                        Log.LogError(e);
+                try {
+                    GUILayout.BeginHorizontal(GUI.skin.box, GUILayout.Height(GUI.skin.button.lineHeight));
+                    if (avatar.MenuControls[i].type != ControlType.Button) // Buttons won't need the label, as a matter of fact, it'll get in the way for their styling..
+                    {
+                        GUILayout.Label(avatar.MenuControls[i].name, GUILayout.Width(ActionWindowRect.width / 2 - 40));
                     }
-                }
-                else
-                {
-                    try {
-                        GUILayout.Space(controlHeight);
-                    } catch (ArgumentException e) {
-                        Log.LogError(e);
-                    }
-                }
 
-                currentHeight += controlHeight;
+                    float parameterValue = avatar.GetParameterValue(paramId);
+
+                    switch (avatar.MenuControls[i].type) {
+                        case ControlType.Button:
+                            // sandwich between two flexible spaces to center it vertically
+                            GUILayout.BeginVertical();
+                            GUILayout.FlexibleSpace();
+                            var isPressed = GUILayout.RepeatButton($"{avatar.MenuControls[i].name} (held)", GUILayout.MaxWidth(1000));
+                            GUILayout.FlexibleSpace();
+                            GUILayout.EndVertical();
+                            if (isPressed && parameterValue != avatar.MenuControls[i].value) {
+                                avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
+                                setParams.Add(paramId);
+                                lastPressedButton = i;
+                            } else if (lastPressedButton == i) {
+                                // this button was pressed last frame but not this frame
+                                // reset the value to 0
+                                avatar.SetParameterValue(paramId, 0);
+                                lastPressedButton = -1;
+                            }
+
+                            break;
+                        case ControlType.Toggle:
+                            var wasActive = parameterValue == avatar.MenuControls[i].value;
+                            // sandwich between two flexible spaces to center it vertically
+                            GUILayout.BeginVertical();
+                            GUILayout.FlexibleSpace();
+                            var isActive = GUILayout.Toggle(wasActive, string.Empty);
+                            // toggle has 2 pixel gap on top for some reason,
+                            // for some even stranger reason you need a 3 pixel space below to balance that out?
+                            GUILayout.Space(3);
+                            GUILayout.FlexibleSpace();
+                            GUILayout.EndVertical();
+                            if (isActive != wasActive) {
+                                avatar.SetParameterValue(paramId, isActive ? avatar.MenuControls[i].value : 0);
+                                setParams.Add(paramId);
+                            }
+
+                            break;
+                        case ControlType.Slider:
+                            // sandwich between two flexible spaces to center it vertically
+                            GUILayout.BeginVertical();
+                            GUILayout.FlexibleSpace();
+                            // this is still not centered! the bar is 1 pixel too high and is an odd height so is impossible to center
+                            // since the slider dot / point is an even height...
+                            var sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f, GUILayout.ExpandHeight(false));
+                            GUILayout.FlexibleSpace();
+                            GUILayout.EndVertical();
+                            if (Mathf.Abs(sliderValue - parameterValue) > 0.01f) {
+                                avatar.SetParameterValue(paramId, sliderValue);
+                                setParams.Add(paramId);
+                            }
+
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    GUILayout.EndHorizontal();
+                } catch (ArgumentException e) {
+                    Log.LogError(e);
+                }
             }
-
-            GUILayout.Space(70);
 
             GUILayout.EndVertical();
             GUILayout.EndScrollView();
