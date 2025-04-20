@@ -274,7 +274,7 @@ namespace ValheimPlayerModels
                 if (visible)
                 {
                     try {
-                        GUILayout.BeginHorizontal(GUI.skin.box);
+                        GUILayout.BeginHorizontal(GUI.skin.box, GUILayout.Height(GUI.skin.button.lineHeight));
                         if (avatar.MenuControls[i].type != ControlType.Button) // Buttons won't need the label, as a matter of fact, it'll get in the way for their styling..
                         {
                             GUILayout.Label(avatar.MenuControls[i].name);
@@ -284,8 +284,12 @@ namespace ValheimPlayerModels
 
                         switch (avatar.MenuControls[i].type) {
                             case ControlType.Button:
+                                // sandwich between two flexible spaces to center it vertically
+                                GUILayout.BeginVertical();
+                                GUILayout.FlexibleSpace();
                                 var isPressed = GUILayout.RepeatButton($"{avatar.MenuControls[i].name} (held)", GUILayout.MaxWidth(1000));
-                                var isMouseOver = GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition);
+                                GUILayout.FlexibleSpace();
+                                GUILayout.EndVertical();
                                 if (isPressed && parameterValue != avatar.MenuControls[i].value) {
                                     avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
                                     setParams.Add(paramId);
@@ -300,8 +304,15 @@ namespace ValheimPlayerModels
                                 break;
                             case ControlType.Toggle:
                                 var wasActive = parameterValue == avatar.MenuControls[i].value;
-
+                                // sandwich between two flexible spaces to center it vertically
+                                GUILayout.BeginVertical();
+                                GUILayout.FlexibleSpace();
                                 var isActive = GUILayout.Toggle(wasActive, string.Empty);
+                                // toggle has 2 pixel gap on top for some reason,
+                                // for some even stranger reason you need a 3 pixel space below to balance that out?
+                                GUILayout.Space(3);
+                                GUILayout.FlexibleSpace();
+                                GUILayout.EndVertical();
                                 if (isActive != wasActive) {
                                     avatar.SetParameterValue(paramId, isActive ? avatar.MenuControls[i].value : 0);
                                     setParams.Add(paramId);
@@ -309,7 +320,14 @@ namespace ValheimPlayerModels
 
                                 break;
                             case ControlType.Slider:
-                                var sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f);
+                                // sandwich between two flexible spaces to center it vertically
+                                GUILayout.BeginVertical();
+                                GUILayout.FlexibleSpace();
+                                // this is still not centered! the bar is 1 pixel too high and is an odd height so is impossible to center
+                                // since the slider dot / point is an even height...
+                                var sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f, GUILayout.ExpandHeight(false));
+                                GUILayout.FlexibleSpace();
+                                GUILayout.EndVertical();
                                 if (Mathf.Abs(sliderValue - parameterValue) > 0.01f) {
                                     avatar.SetParameterValue(paramId, sliderValue);
                                     setParams.Add(paramId);
