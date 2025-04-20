@@ -76,7 +76,6 @@ namespace ValheimPlayerModels
             {
                 Plugin.showActionMenu = false;
                 Plugin.showAvatarMenu = false;
-                Plugin.ResetCursor();
             }
             RemoveAvatar(false);
             StopAllCoroutines();
@@ -308,7 +307,7 @@ namespace ValheimPlayerModels
                         yield break;
                 }
                 
-                yield return StartCoroutine(loader.LoadFile(avatarFile));
+                yield return loader.LoadFile(avatarFile);
 
                 if (!loader.LoadedSuccessfully)
                 {
@@ -321,10 +320,14 @@ namespace ValheimPlayerModels
 
             #endregion
 
-            avatar = loader.LoadAvatar(this);
+            yield return loader.LoadAvatar(this);
 
-            if (avatar == null)
+            avatar = loader.LoadedAvatarInstance;
+
+            if (avatar == null) {
                 Destroy(this);
+                yield break;
+            }
 
             if (this == localModel) {
                 // only load default parameters for local player

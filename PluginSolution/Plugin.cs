@@ -1,4 +1,4 @@
-﻿#if PLUGIN
+#if PLUGIN
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -28,17 +28,17 @@ namespace ValheimPlayerModels
 
         public static bool showActionMenu;
         public static bool showAvatarMenu;
-        private Rect ActionWindowRect;
-        private Rect AvatarWindowRect;
-        private static CursorLockMode oldCursorLockState = CursorLockMode.None;
-        private static bool oldCursorVisible = true;
+        private static Rect ActionWindowRect;
+        private static Rect AvatarWindowRect;
         public const int ActionWindowId = -48;
         public const int AvatarWindowId = -49;
-        private Vector2 actionMenuWindowScrollPos;
-        private Vector2 avatarMenuWindowScrollPos;
+        private static Vector2 actionMenuWindowScrollPos;
+        private static Vector2 avatarMenuWindowScrollPos;
+        private static int lastPressedButton = -1;
+
+        public static bool ShouldBlockUserInput => false;
         
-        public static bool DisplayingWindow =>
-            showActionMenu || showAvatarMenu;
+        public static bool ShouldBlockAttackControls => showActionMenu || showAvatarMenu;
 
         private void Awake()
         {
@@ -59,71 +59,38 @@ namespace ValheimPlayerModels
             Logger.LogInfo($"Plugin {PluginConfig.PLUGIN_GUID} is loaded!");
         }
 
-        private void Update()
-        {
-            if (PluginConfig.reloadKey.Value.IsDown())
+        private void ReloadPlayerModels() {
+            if (!PluginConfig.enablePlayerModels.Value) return;
+            var playerModels = FindObjectsOfType<PlayerModel>();
+            var canReload = playerModels.All(playerModel => playerModel.playerModelLoaded);
+
+            if (!canReload) return;
+
+            foreach (var playerModel in playerModels)
             {
-                if (PluginConfig.enablePlayerModels.Value)
-                {
-                    PlayerModel[] playerModels = FindObjectsOfType<PlayerModel>();
-                    bool canReload = true;
-
-                    foreach (PlayerModel playerModel in playerModels)
-                    {
-                        if (!playerModel.playerModelLoaded)
-                        {
-                            canReload = false;
-                            break;
-                        }
-                    }
-
-                    if (!canReload) return;
-
-                    foreach (PlayerModel playerModel in playerModels)
-                    {
-                        playerModel.ToggleAvatar(false);
-                        Destroy(playerModel);
-                    }
-
-                    foreach (AvatarLoaderBase loader in playerModelBundleCache.Values)
-                    {
-                        if(loader != null) loader.Unload();
-                    }
-                    playerModelBundleCache.Clear();
-                    RefreshBundlePaths();
-
-                    Player[] players = FindObjectsOfType<Player>();
-                    foreach (Player player in players)
-                    {
-                        player.gameObject.AddComponent<PlayerModel>();
-                    }
-                }
+                playerModel.RemoveAvatar(true);
+                Destroy(playerModel);
             }
 
-            if (PluginConfig.actionMenuKey.Value.IsDown() && !showAvatarMenu)
-            {
-                if (PlayerModel.localModel != null && Game.instance != null)
-                {
-                    showActionMenu = !showActionMenu;
-                    if (showActionMenu)
-                    {
-                        SetUnlockCursor();
-                        GUI.FocusWindow(ActionWindowId);
-                    }
-                    else ResetCursor();
-                }
+            foreach (var loader in playerModelBundleCache.Values) {
+                StartCoroutine(loader?.Unload());
             }
+            playerModelBundleCache.Clear();
+            RefreshBundlePaths();
 
-            if (PluginConfig.avatarMenuKey.Value.IsDown() && !showActionMenu)
+            var players = FindObjectsOfType<Player>();
+            foreach (var player in players)
             {
-                showAvatarMenu = !showAvatarMenu;
-                if (showAvatarMenu)
-                {
-                    SetUnlockCursor();
-                    GUI.FocusWindow(AvatarWindowId);
-                }
-                else ResetCursor();
+                player.gameObject.AddComponent<PlayerModel>();
             }
+        }
+
+        private void UpdateCursor() {
+            // same thing a few of Valheim's scripts do to show / hide cursor
+            // we patch ZInput.IsMouseActive to return true if we want to show the cursor
+            // so this will work correctly for us too
+            Cursor.lockState = ZInput.IsMouseActive() ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = ZInput.IsMouseActive();
         }
 
         private void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
@@ -193,36 +160,46 @@ namespace ValheimPlayerModels
         }
 
         #region GUI
-        
-        public static void SetUnlockCursor()
-        {
-            if (Cursor.lockState == CursorLockMode.None) return;
-
-            oldCursorLockState = Cursor.lockState;
-            oldCursorVisible = Cursor.visible;
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-
-        public static void ResetCursor()
-        {
-            Cursor.lockState = oldCursorLockState;
-            Cursor.visible = oldCursorVisible;
-        }
-
         private bool ShouldCloseWindow(Rect windowRect) {
             var guiMousePosition = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
             return GUI.Button(new Rect(0, 0, Screen.width, Screen.height), string.Empty, GUIStyle.none) &&
                 !windowRect.Contains(guiMousePosition) || Input.GetKeyDown(KeyCode.Escape);
         }
 
+        private static bool IsPlayerKeyboardFocused() {
+            // copied from PlayerController.TakeInput
+            return !(!Chat.instance || !Chat.instance.HasFocus()) && !Menu.IsVisible() && !Console.IsVisible() &&
+                !TextInput.IsVisible() && !Minimap.InTextInput() && (!ZInput.IsGamepadActive() || !Minimap.IsOpen()) &&
+                (!ZInput.IsGamepadActive() || !InventoryGui.IsVisible()) &&
+                (!ZInput.IsGamepadActive() || !StoreGui.IsVisible()) &&
+                (!ZInput.IsGamepadActive() || !Hud.IsPieceSelectionVisible());
+        }
+
         private void OnGUI()
         {
+            if (Event.current.type == EventType.KeyDown && !IsPlayerKeyboardFocused()) {
+                if (PluginConfig.avatarMenuKey.Value.MainKey == Event.current.keyCode) {
+                    showAvatarMenu = !showAvatarMenu;
+                    UpdateCursor();
+                }
+                if (PluginConfig.actionMenuKey.Value.MainKey == Event.current.keyCode) {
+                    showActionMenu = !showActionMenu;
+                    UpdateCursor();
+                }
+                if (PluginConfig.reloadKey.Value.MainKey == Event.current.keyCode) {
+                    ReloadPlayerModels();
+                }
+            }
+
             if (showActionMenu && PlayerModel.localModel != null)
             {
-                if (ActionWindowRect.width == 0) {
-                    ActionWindowRect = new Rect(Screen.width, Screen.height, 250, 400);
+                if (ActionWindowRect.width == 0)
+                {
+                    var actionWindowWidth = 250;
+                    var actionWindowHeight = 400;
+                    var actionWindowHorizontalOffset = (float)(actionWindowWidth / 2 + Screen.width*0.05);
+                    
+                    ActionWindowRect = new Rect(Screen.width/2 + actionWindowWidth/2 + actionWindowHorizontalOffset, Screen.height/2 + actionWindowHeight/2, actionWindowWidth, actionWindowHeight);
                     ActionWindowRect.x -= ActionWindowRect.width;
                     ActionWindowRect.y -= ActionWindowRect.height;
                 }
@@ -231,7 +208,6 @@ namespace ValheimPlayerModels
                 if (ShouldCloseWindow(ActionWindowRect))
                 {
                     showActionMenu = false;
-                    ResetCursor();
                 }
 
                 GUI.enabled = PlayerModel.localModel.playerModelLoaded;
@@ -251,7 +227,6 @@ namespace ValheimPlayerModels
                 if (ShouldCloseWindow(AvatarWindowRect))
                 {
                     showAvatarMenu = false;
-                    ResetCursor();
                 }
 
                 if (PlayerModel.localModel)
@@ -270,15 +245,16 @@ namespace ValheimPlayerModels
         {
             GUI.DragWindow (new Rect (0, 0, 10000, 20));
             AvatarInstance avatar = PlayerModel.localModel.avatar;
+            if (avatar == null) {
+                showActionMenu = false;
+                return;
+            }
             actionMenuWindowScrollPos = GUILayout.BeginScrollView(actionMenuWindowScrollPos, false, true);
 
             var scrollPosition = actionMenuWindowScrollPos.y;
             var scrollHeight = ActionWindowRect.height;
 
             GUILayout.BeginVertical();
-
-            float controlHeight = 21;
-            float currentHeight = 0;
             
             var setParams = new HashSet<int>();
 
@@ -290,67 +266,76 @@ namespace ValheimPlayerModels
                     string.IsNullOrEmpty(avatar.MenuControls[i].parameter) ||
                     !avatar.Parameters.ContainsKey(paramId)) continue;
 
-                var visible = controlHeight == 0 || currentHeight + controlHeight >= scrollPosition && currentHeight <= scrollPosition + scrollHeight;
-
-                if (visible)
-                {
-                    try {
-                        GUILayout.BeginHorizontal(GUI.skin.box);
-                        GUILayout.Label(avatar.MenuControls[i].name);
-
-                        float parameterValue = avatar.GetParameterValue(paramId);
-
-                        switch (avatar.MenuControls[i].type) {
-                            case ControlType.Button:
-                                if (GUILayout.RepeatButton(string.Empty)) {
-                                    avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
-                                    setParams.Add(paramId);
-                                } else if (!setParams.Contains(paramId)) {
-                                    avatar.SetParameterValue(paramId, 0);
-                                }
-
-                                break;
-                            case ControlType.Toggle:
-                                bool menuToggleValue = parameterValue != 0;
-
-                                bool toggleValue = GUILayout.Toggle(menuToggleValue, string.Empty);
-                                if (toggleValue != menuToggleValue) {
-                                    avatar.SetParameterValue(paramId, toggleValue ? avatar.MenuControls[i].value : 0);
-                                    setParams.Add(paramId);
-                                }
-
-                                break;
-                            case ControlType.Slider:
-
-                                float sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f);
-                                if (Mathf.Abs(sliderValue - parameterValue) > 0.01f) {
-                                    avatar.SetParameterValue(paramId, sliderValue);
-                                    setParams.Add(paramId);
-                                }
-
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-
-                        GUILayout.EndHorizontal();
-                    } catch (ArgumentException e) {
-                        Log.LogError(e);
+                try {
+                    GUILayout.BeginHorizontal(GUI.skin.box, GUILayout.Height(GUI.skin.button.lineHeight));
+                    if (avatar.MenuControls[i].type != ControlType.Button) // Buttons won't need the label, as a matter of fact, it'll get in the way for their styling..
+                    {
+                        GUILayout.Label(avatar.MenuControls[i].name, GUILayout.Width(ActionWindowRect.width / 2 - 40));
                     }
-                }
-                else
-                {
-                    try {
-                        GUILayout.Space(controlHeight);
-                    } catch (ArgumentException e) {
-                        Log.LogError(e);
-                    }
-                }
 
-                currentHeight += controlHeight;
+                    float parameterValue = avatar.GetParameterValue(paramId);
+
+                    switch (avatar.MenuControls[i].type) {
+                        case ControlType.Button:
+                            // sandwich between two flexible spaces to center it vertically
+                            GUILayout.BeginVertical();
+                            GUILayout.FlexibleSpace();
+                            var isPressed = GUILayout.RepeatButton($"{avatar.MenuControls[i].name} (held)", GUILayout.MaxWidth(1000));
+                            GUILayout.FlexibleSpace();
+                            GUILayout.EndVertical();
+                            if (isPressed && parameterValue != avatar.MenuControls[i].value) {
+                                avatar.SetParameterValue(paramId, avatar.MenuControls[i].value);
+                                setParams.Add(paramId);
+                                lastPressedButton = i;
+                            } else if (lastPressedButton == i) {
+                                // this button was pressed last frame but not this frame
+                                // reset the value to 0
+                                avatar.SetParameterValue(paramId, 0);
+                                lastPressedButton = -1;
+                            }
+
+                            break;
+                        case ControlType.Toggle:
+                            var wasActive = parameterValue == avatar.MenuControls[i].value;
+                            // sandwich between two flexible spaces to center it vertically
+                            GUILayout.BeginVertical();
+                            GUILayout.FlexibleSpace();
+                            var isActive = GUILayout.Toggle(wasActive, string.Empty);
+                            // toggle has 2 pixel gap on top for some reason,
+                            // for some even stranger reason you need a 3 pixel space below to balance that out?
+                            GUILayout.Space(3);
+                            GUILayout.FlexibleSpace();
+                            GUILayout.EndVertical();
+                            if (isActive != wasActive) {
+                                avatar.SetParameterValue(paramId, isActive ? avatar.MenuControls[i].value : 0);
+                                setParams.Add(paramId);
+                            }
+
+                            break;
+                        case ControlType.Slider:
+                            // sandwich between two flexible spaces to center it vertically
+                            GUILayout.BeginVertical();
+                            GUILayout.FlexibleSpace();
+                            // this is still not centered! the bar is 1 pixel too high and is an odd height so is impossible to center
+                            // since the slider dot / point is an even height...
+                            var sliderValue = GUILayout.HorizontalSlider(parameterValue, 0.0f, 1.0f, GUILayout.ExpandHeight(false));
+                            GUILayout.FlexibleSpace();
+                            GUILayout.EndVertical();
+                            if (Mathf.Abs(sliderValue - parameterValue) > 0.01f) {
+                                avatar.SetParameterValue(paramId, sliderValue);
+                                setParams.Add(paramId);
+                            }
+
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    GUILayout.EndHorizontal();
+                } catch (ArgumentException e) {
+                    Log.LogError(e);
+                }
             }
-
-            GUILayout.Space(70);
 
             GUILayout.EndVertical();
             GUILayout.EndScrollView();

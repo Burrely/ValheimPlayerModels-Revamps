@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#if PLUGIN
+using System.Collections;
 
 namespace ValheimPlayerModels.Loaders
 {
@@ -10,14 +11,15 @@ namespace ValheimPlayerModels.Loaders
             yield break;
         }
 
-        public override AvatarInstance LoadAvatar(PlayerModel playerModel)
+        public override IEnumerator LoadAvatar(PlayerModel playerModel)
         {
-            return null;
+            yield break;
         }
 
-        public override void Unload()
+        public override IEnumerator Unload()
         {
-
+            yield break;
         }
     }
 }
+#endif

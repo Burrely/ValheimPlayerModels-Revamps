@@ -55,6 +55,8 @@ namespace ValheimPlayerModels
             private readonly float m_length;
             //private Vector3 m_localDir;
             private Vector3 m_prevTail;
+            private Quaternion m_targetLocalRotation;
+            private Quaternion m_previousLocalRotation;
 
             public SpringBoneLogic(Transform center, Transform transform, Vector3 localChildPosition)
             {
@@ -64,14 +66,13 @@ namespace ValheimPlayerModels
                     ? center.InverseTransformPoint(worldChildPosition)
                     : worldChildPosition;
                 m_prevTail = m_currentTail;
-                LocalRotation = transform.localRotation;
+                m_targetLocalRotation = transform.localRotation;
+                m_previousLocalRotation = transform.localRotation;
                 m_boneAxis = localChildPosition.normalized;
                 m_length = localChildPosition.magnitude;
             }
 
             public Vector3 Tail => m_transform.localToWorldMatrix.MultiplyPoint(m_boneAxis * m_length);
-
-            private Quaternion LocalRotation { get; }
 
             private Quaternion ParentRotation =>
                 m_transform.parent != null
@@ -88,10 +89,16 @@ namespace ValheimPlayerModels
                     ? center.TransformPoint(m_prevTail)
                     : m_prevTail;
 
+                if (m_transform.localRotation != m_previousLocalRotation) {
+                    // if we detect a change in rotation from what we last set it to
+                    // then we should update our target rotation to that rotation
+                    m_targetLocalRotation = m_transform.localRotation;
+                }
+
                 // verlet積分で次の位置を計算
                 var nextTail = currentTail
                                + (currentTail - prevTail) * (1.0f - dragForce) // 前フレームの移動を継続する(減衰もあるよ)
-                               + ParentRotation * LocalRotation * m_boneAxis * stiffnessForce // 親の回転による子ボーンの移動目標
+                               + ParentRotation * m_targetLocalRotation * m_boneAxis * stiffnessForce // 親の回転による子ボーンの移動目標
                                + external; // 外力による移動量
 
                 // 長さをboneLengthに強制
@@ -108,11 +115,12 @@ namespace ValheimPlayerModels
 
                 //回転を適用
                 m_transform.rotation = ApplyRotation(nextTail);
+                m_previousLocalRotation = m_transform.localRotation;
             }
 
             protected virtual Quaternion ApplyRotation(Vector3 nextTail)
             {
-                var rotation = ParentRotation * LocalRotation;
+                var rotation = ParentRotation * m_targetLocalRotation;
                 return Quaternion.FromToRotation(rotation * m_boneAxis,
                     nextTail - m_transform.position) * rotation;
             }

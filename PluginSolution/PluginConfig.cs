@@ -14,7 +14,7 @@ namespace ValheimPlayerModels
     {
         public const string PLUGIN_GUID = "ValheimPlayerModels";
         public const string PLUGIN_NAME = "Valheim Player Models";
-        public const string PLUGIN_VERSION = "1.3.1";
+        public const string PLUGIN_VERSION = "1.4.0";
 
         public static ConfigFile config;
         public static ConfigEntry<bool> enablePlayerModels;
