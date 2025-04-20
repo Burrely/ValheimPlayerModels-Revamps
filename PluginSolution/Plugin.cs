@@ -277,7 +277,7 @@ namespace ValheimPlayerModels
                         GUILayout.BeginHorizontal(GUI.skin.box, GUILayout.Height(GUI.skin.button.lineHeight));
                         if (avatar.MenuControls[i].type != ControlType.Button) // Buttons won't need the label, as a matter of fact, it'll get in the way for their styling..
                         {
-                            GUILayout.Label(avatar.MenuControls[i].name);
+                            GUILayout.Label(avatar.MenuControls[i].name, GUILayout.Width(ActionWindowRect.width / 2 - 40));
                         }
 
                         float parameterValue = avatar.GetParameterValue(paramId);
