@@ -5,12 +5,12 @@
 > [!NOTE]
 > Installation instructions listed below.
 
-## Latest files (1.3.1)
+## Latest files (1.4.0)
 
 | File | Download |
 |----------:|----|
-| **Plugin (mod)** | [![Download](https://gist.githubusercontent.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/download.svg)](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/download/1.3.1/ValheimPlayerModels.dll) |
-| **Unity SDK** | [![Download](https://gist.githubusercontent.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/download.svg)](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/download/1.3.1/ValheimPlayerModels_SDK_1.3.1.unitypackage) | 
+| **Plugin (mod)** | [![Download](https://gist.githubusercontent.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/download.svg)](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/download/1.4.0/ValheimPlayerModels.dll) |
+| **Unity SDK** | [![Download](https://gist.githubusercontent.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/download.svg)](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/download/1.4.0/ValheimPlayerModels_SDK_1.4.0.unitypackage) | 
 
 ## About ValheimPlayerModels - Revamps
 **ValheimPlayerModels - Revamps** is a project based on the [ValheimPlayerModels mod](https://github.com/dresklaw/ValheimPlayerModels) by [Ikeiwa](https://github.com/ikeiwa/) and maintained by [Dresklaw](https://github.com/dresklaw).<br>
@@ -23,7 +23,7 @@ Interested in this project? ***Check out the [Roadmap](#roadmap) down below!***
 ## How to install
 
 > 1. Download and install the [BepInEx package](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/)
-> 2. Drag and drop ValheimPlayerModels.dll in the "BepInEx/plugin" folder in your game install folder
+> 2. Drag and drop [ValheimPlayerModels.dll](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/download/1.4.0/ValheimPlayerModels.dll) in the "BepInEx/plugin" folder in your game install folder
 > 3. Launch the game
 > 4. Place all your avatars in the newly created "PlayerModels" folder inside your game install folder
 > 5. The mod will load the avatar with the same filename as your character name (you might want to restart the game)
@@ -32,7 +32,7 @@ Interested in this project? ***Check out the [Roadmap](#roadmap) down below!***
 
 > 1. Install [Unity 2022.3.50f1](https://unity.com/releases/editor/whats-new/2022.3.50)(, versions of 2022 preceding 2022.3.50f1 work too, e.g. 2022.3.22)
 > 2. Create a new 3D Project
-> 3. [Download the SDK](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/download/1.3.1/ValheimPlayerModels_SDK_1.3.1.unitypackage)
+> 3. [Download the SDK](https://github.com/Burrely/ValheimPlayerModels-Revamps/releases/download/1.4.0/ValheimPlayerModels_SDK_1.4.0.unitypackage)
 > 4. Import the SDK and all your avatar assets
 > 5. Change your avatar model rig to Humanoid
 > 6. Place your avatar model in the scene
@@ -58,10 +58,10 @@ init: {
 timeline
   section Finished
    1.3.1 : Enable Action Menu : Enable Editor Action Menu
+   1.4.0 (current) : In-game Action Menu Enhancement : Editor Action Menu Enhancement : Parameter Saving : Movement with Action Menu Open : Animated Springbones
   section Upcoming Release
-   1.4.0 : In-game Action Menu Enhancement : Editor Action Menu Enhancement : Parameter Saving : Movement with Action Menu Open : Animated Springbones
-  section Future Releases
    1.5.0 : Custom Clothes/Armor (without toggles)
+  section Future Releases
    1.6.0 : Action Menu Overhaul (Custom Presets)
    1.7.0 : Action Menu Overhaul 2 (Advanced setups)
 ```
