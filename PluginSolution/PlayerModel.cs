@@ -138,9 +138,9 @@ namespace ValheimPlayerModels
 
                     if (ogHips)
                     {
-                        avatar.Hips.position = new Vector3(avatar.Hips.position.x, ogHips.position.y, avatar.Hips.position.z);
+                        avatar.Hips.position = new Vector3(avatar.Hips.position.x, avatar.Hips.position.y, avatar.Hips.position.z);
 
-                        float groundOffset = Mathf.Min(avatar.LeftFoot.position.y - avatar.Transform.position.y, avatar.RightFoot.position.y - avatar.Transform.position.y, 0);
+                        float groundOffset = Mathf.Min(avatar.LeftFoot.GetChild(0).position.y - avatar.Transform.position.y, avatar.RightFoot.GetChild(0).position.y - avatar.Transform.position.y, 0);
 
                         avatar.Hips.Translate(0, -groundOffset + footOffset, 0, Space.World);
                     }
@@ -398,8 +398,8 @@ namespace ValheimPlayerModels
             if (ogPose == null) ogPose = new HumanPoseHandler(ogAnimator.avatar, ogAnimator.transform);
             if (pmPose == null) pmPose = new HumanPoseHandler(avatar.Animator.avatar, avatar.Animator.transform);
 
-            footOffset = ((avatar.LeftFoot.position.y - avatar.Transform.position.y) +
-                          (avatar.RightFoot.position.y - avatar.Transform.position.y)) / 2.0f;
+            footOffset = ((avatar.LeftFoot.GetChild(0).position.y - avatar.Transform.position.y) +
+                          (avatar.RightFoot.GetChild(0).position.y - avatar.Transform.position.y)) / 2.0f;
 
             ogAttachments = new List<AttachTransform>();
             SetAttachParent(visEquipment.m_backAtgeir, avatar.AvatarDescriptor.backAtgeir);
