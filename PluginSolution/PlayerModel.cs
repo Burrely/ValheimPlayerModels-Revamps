@@ -42,7 +42,6 @@ namespace ValheimPlayerModels
         private HumanPoseHandler pmPose;
         private HumanPose pose = new HumanPose();
         
-        private float footOffset;
         private bool dead = false;
         private bool requestHide;
 
@@ -133,17 +132,6 @@ namespace ValheimPlayerModels
                     avatar.Transform.localPosition = Vector3.zero;
                     ogPose.GetHumanPose(ref pose);
                     pmPose.SetHumanPose(ref pose);
-
-                    Transform ogHips = ogAnimator.GetBoneTransform(HumanBodyBones.Hips);
-
-                    if (ogHips)
-                    {
-                        avatar.Hips.position = new Vector3(avatar.Hips.position.x, avatar.Hips.position.y, avatar.Hips.position.z);
-
-                        float groundOffset = Mathf.Min(avatar.LeftFoot.GetChild(0).position.y - avatar.Transform.position.y, avatar.RightFoot.GetChild(0).position.y - avatar.Transform.position.y, 0);
-
-                        avatar.Hips.Translate(0, -groundOffset + footOffset, 0, Space.World);
-                    }
                 }
 
                 foreach (AttachTransform attachTransform in ogAttachments)
@@ -398,8 +386,7 @@ namespace ValheimPlayerModels
             if (ogPose == null) ogPose = new HumanPoseHandler(ogAnimator.avatar, ogAnimator.transform);
             if (pmPose == null) pmPose = new HumanPoseHandler(avatar.Animator.avatar, avatar.Animator.transform);
 
-            footOffset = ((avatar.LeftFoot.GetChild(0).position.y - avatar.Transform.position.y) +
-                          (avatar.RightFoot.GetChild(0).position.y - avatar.Transform.position.y)) / 2.0f;
+            avatar.Transform.localPosition = ogAnimator.transform.localPosition;
 
             ogAttachments = new List<AttachTransform>();
             SetAttachParent(visEquipment.m_backAtgeir, avatar.AvatarDescriptor.backAtgeir);
